@@ -4,5 +4,6 @@ version = "0.1.0-dev"
 edition = "2021"
 
 [dependencies]
+crossterm = "0.28.1"
 ratatui = { version = "0.28.1", features = ["unstable-widget-ref"] }
 tachyonfx = "0.7.0"
