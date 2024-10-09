@@ -14,6 +14,7 @@ use ratatui::widgets::{Block, Clear};
 use tachyonfx::{fx, CenteredShrink, Effect};
 use crate::event_handler::EventHandler;
 use crate::tui::Tui;
+use crate::widget::KeyboardWidget;
 
 fn main() -> io::Result<()> {
     let mut events = EventHandler::new(std::time::Duration::from_millis(33));
@@ -38,10 +39,7 @@ fn ui(f: &mut Frame<'_>) {
     Block::default()
         .style(Style::default().bg(Color::DarkGray))
         .render(f.area(), f.buffer_mut());
-    let area = f.area().inner_centered(25, 2);
-    let main_text = Text::from(vec![
-        Line::from("Hello, TachyonFX!"),
-        Line::from("Press any key to exit."),
-    ]);
-    f.render_widget(main_text.white().centered(), area);
+
+    let kbd = KeyboardWidget::new();
+    kbd.render(f.area(), f.buffer_mut());
 }
