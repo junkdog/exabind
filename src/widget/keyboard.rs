@@ -1,8 +1,8 @@
 use crossterm::event::{KeyCode, ModifierKeyCode};
 use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::{Offset, Rect, Size};
+use ratatui::layout::{Alignment, Offset, Rect, Size};
 use ratatui::prelude::{Color, Position};
-use ratatui::text::Span;
+use ratatui::text::{Span, Text};
 use ratatui::widgets::{Widget, WidgetRef};
 use tachyonfx::CellIterator;
 // ref: https://upload.wikimedia.org/wikipedia/commons/3/3a/Qwerty.svg
@@ -36,21 +36,21 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect {
         let size = match key_code {
             KeyCode::Char(' ') => Size::new(SPACE_W, KEY_H),
-            KeyCode::Char('\\') => Size::new(KEY_W * 2, KEY_H),
+            KeyCode::Char('\\') => Size::new(8, KEY_H),
             KeyCode::Tab => Size::new(TAB_W, KEY_H),
             KeyCode::CapsLock => Size::new(CAPSLOCK_W, KEY_H),
-            KeyCode::Backspace => Size::new(1 + KEY_W * 2, KEY_H),
-            KeyCode::Enter => Size::new(14, KEY_H),
+            KeyCode::Backspace => Size::new(KEY_W * 2 - 1, KEY_H),
+            KeyCode::Enter => Size::new(12, KEY_H),
             KeyCode::Modifier(c) => match c {
                 ModifierKeyCode::LeftShift => Size::new(SHIFT_L_W, KEY_H),
                 ModifierKeyCode::RightShift => Size::new(SHIFT_R_W, KEY_H),
-                ModifierKeyCode::LeftControl => Size::new(CTRL_W, KEY_H),
+                ModifierKeyCode::LeftControl => Size::new(CTRL_L_W, KEY_H),
                 ModifierKeyCode::LeftSuper => Size::new(SUPER_W, KEY_H),
                 ModifierKeyCode::LeftHyper => Size::new(SUPER_W, KEY_H),
                 ModifierKeyCode::LeftMeta => Size::new(SUPER_W, KEY_H),
                 ModifierKeyCode::LeftAlt => Size::new(ALT_W, KEY_H),
                 ModifierKeyCode::RightAlt => Size::new(ALT_W, KEY_H),
-                ModifierKeyCode::RightControl => Size::new(CTRL_W, KEY_H),
+                ModifierKeyCode::RightControl => Size::new(CTRL_R_W, KEY_H),
                 ModifierKeyCode::RightSuper => Size::new(SUPER_W, KEY_H),
                 ModifierKeyCode::RightHyper => Size::new(SUPER_W, KEY_H),
                 ModifierKeyCode::RightMeta => Size::new(SUPER_W, KEY_H),
@@ -70,7 +70,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             let start = 1 + KEY_W;
 
             // group gap is ~3
-            let group_gap = 3 * (((n as u16 - 1) / 4));
+            let group_gap = 2 * (((n as u16 - 1) / 4));
 
             return start + group_gap + n as u16 * KEY_W;
         };
@@ -82,7 +82,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             KeyCode::Char(c) if TOP_ROW.contains(c) => (TAB_W + offset(TOP_ROW, c), 5),
             KeyCode::Char(c) if MIDDLE_ROW.contains(c) => (CAPSLOCK_W + offset(MIDDLE_ROW, c), 7),
             KeyCode::Char(c) if BOTTOM_ROW.contains(c) => (SHIFT_L_W + offset(BOTTOM_ROW, c), 9),
-            KeyCode::Char(' ') => (1 + CTRL_W + SUPER_W + ALT_W, 11),
+            KeyCode::Char(' ') => (1 + CTRL_L_W + SUPER_W + ALT_W, 11),
             KeyCode::Char(c) => (0, 0),
             KeyCode::Backspace => (1 + 13 * KEY_W, 3),
             KeyCode::Tab => (1, 5),
@@ -104,7 +104,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             KeyCode::NumLock => (0, 0),
             KeyCode::PrintScreen => (NAV_KEY_X_START, 0),
             KeyCode::Pause => (NAV_KEY_X_START + KEY_W * 2, 0),
-            KeyCode::Menu => (1 + CTRL_W + SUPER_W + ALT_W + SPACE_W + ALT_W, 11),
+            KeyCode::Menu => (1 + CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W, 11),
             KeyCode::KeypadBegin => (0, 0),
             KeyCode::Media(_) => (0, 0),
             KeyCode::Modifier(c) => match c {
@@ -112,15 +112,15 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
                 ModifierKeyCode::RightShift => (1 + SHIFT_L_W + KEY_W * BOTTOM_ROW.len() as u16, 9),
 
                 ModifierKeyCode::LeftControl => (1, 11),
-                ModifierKeyCode::LeftSuper => (1 + CTRL_W, 11),
-                ModifierKeyCode::LeftHyper => (1 + CTRL_W, 11),
-                ModifierKeyCode::LeftMeta => (1 + CTRL_W, 11),
-                ModifierKeyCode::LeftAlt => (1 + CTRL_W + SUPER_W, 11),
-                ModifierKeyCode::RightAlt => (1 + CTRL_W + SUPER_W + ALT_W + SPACE_W, 11),
-                ModifierKeyCode::RightControl => (1 + CTRL_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W + 4, 11),
-                ModifierKeyCode::RightSuper => (1 + CTRL_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W, 11),
-                ModifierKeyCode::RightHyper => (1 + CTRL_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W, 11),
-                ModifierKeyCode::RightMeta => (1 + CTRL_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W, 11),
+                ModifierKeyCode::LeftSuper => (1 + CTRL_L_W, 11),
+                ModifierKeyCode::LeftHyper => (1 + CTRL_L_W, 11),
+                ModifierKeyCode::LeftMeta => (1 + CTRL_L_W, 11),
+                ModifierKeyCode::LeftAlt => (1 + CTRL_L_W + SUPER_W, 11),
+                ModifierKeyCode::RightAlt => (1 + CTRL_L_W + SUPER_W + ALT_W + SPACE_W, 11),
+                ModifierKeyCode::RightControl => (1 + CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W + KEY_W, 11),
+                ModifierKeyCode::RightSuper => (1 + CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W, 11),
+                ModifierKeyCode::RightHyper => (1 + CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W, 11),
+                ModifierKeyCode::RightMeta => (1 + CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W, 11),
                 ModifierKeyCode::IsoLevel3Shift => (0, 11), // ignore
                 ModifierKeyCode::IsoLevel5Shift => (0, 11), // ignore
             },
@@ -155,7 +155,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
 
             // bottom row
             Modifier(LeftControl), Modifier(LeftSuper), Modifier(LeftAlt), Char(' '),
-            Modifier(RightAlt), Modifier(RightSuper), Modifier(RightControl),
+            Modifier(RightAlt), Menu, Modifier(RightSuper), Modifier(RightControl),
             //
             PrintScreen, ScrollLock, Pause,
             //
@@ -191,21 +191,22 @@ impl KeyboardWidget {
             '┌' => match current {
                 ' ' | '─' => cell.set_char('┌'),
                 '┘' => cell.set_char('╪'),
-                '╡' => cell.set_char('╬'),
+                '╡' => cell.set_char('╫'),
+                '┤' => cell.set_char('╫'),
                 '┐' => cell.set_char('╥'),
                 '│' => cell.set_char(current),
-                '└' => cell.set_char('╞'),
-                '╨' => cell.set_char('╬'),
-                '╬' => cell.set_char(current),
-                '╪' => cell.set_char(current),
+                '└' => cell.set_char('├'),
+                '╨' => cell.set_char('╫'),
+                '╫' => cell.set_char(current),
+                '╪' => cell.set_char('╫'),
                 n => panic!("Invalid border character: {}", n),
             },
             '┐' => match current {
                 ' ' | '─' => cell.set_char('┐'),
                 '┌' => cell.set_char('╥'),
-                '┘' => cell.set_char('╡'),
+                '┘' => cell.set_char('┤'),
                 '└' => cell.set_char('╪'),
-                '╨' => cell.set_char('╬'),
+                '╨' => cell.set_char('╫'),
                 n => panic!("Invalid border character: {}", n),
             },
             '┘' => match current {
@@ -217,7 +218,8 @@ impl KeyboardWidget {
             '│' => match current {
                 ' ' => cell.set_char('│'),
                 '│' => cell.set_char('║'),
-                n => panic!("Invalid border character: {}", n),
+                // n => panic!("Invalid border character: {}", n),
+                _ => cell.set_char('|'),
             },
             _ => panic!("Invalid border character"),
         };
@@ -231,13 +233,13 @@ impl KeyboardWidget {
         Self::draw_key_border('└', &mut buf[(x, y + 2)]);
 
         // horizontal borders
-        for x in area.x + 1..area.x + area.width - 1 {
+        for x in area.x..area.x + area.width - 1 {
             let cell = &mut buf[(x, area.y + 0)];
             if cell.symbol() == " " {
                 cell.set_char('─');
             }
 
-            let cell = &mut buf[(x, area.y + 2)];
+            let cell = &mut buf[(x, area.y + KEY_H - 1)];
             if cell.symbol() == " " {
                 cell.set_char('─');
             }
@@ -295,7 +297,9 @@ impl KeyboardWidget {
             },
         };
 
-        Span::from(key_string)
+        let alignment = if key_string.char_indices().count() != 3 { Alignment::Center } else { Alignment::Left };
+        Text::from(Span::from(key_string))
+            .alignment(alignment)
             .render(area.offset(Offset { x: 0, y: 1 }), buf);
     }
 }
@@ -315,7 +319,7 @@ impl WidgetRef for KeyboardWidget {
 }
 
 // const NAV_KEY_X_START: u16 = 1 + CTRL_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W + 4 + SHIFT_R_W + 4;
-const NAV_KEY_X_START: u16 = 80;
+const NAV_KEY_X_START: u16 = 78;
 
 const KEY_W: u16 = 5; // includes | delimited
 const KEY_H: u16 = 3;
@@ -328,10 +332,11 @@ const BOTTOM_ROW: &str = "zxcvbnm,./";
 const TAB_W: u16 = 6;
 const CAPSLOCK_W: u16 = 7;
 const SHIFT_L_W: u16 = 9;
-const SHIFT_R_W: u16 = 17;
-const CTRL_W: u16 = 6;
+const SHIFT_R_W: u16 = 15;
+const CTRL_L_W: u16 = 6;
+const CTRL_R_W: u16 = 9;
 const ALT_W: u16 = 7;
-const SPACE_W: u16 = 31;
+const SPACE_W: u16 = 30;
 
-const SUPER_W: u16 = 4;
-const MENU_W: u16 = 4;
+const SUPER_W: u16 = 5;
+const MENU_W: u16 = 5;
