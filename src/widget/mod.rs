@@ -1,3 +1,3 @@
 mod keyboard;
 
-pub use keyboard::KeyboardWidget;
+pub use keyboard::*;

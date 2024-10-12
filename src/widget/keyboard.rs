@@ -318,7 +318,26 @@ impl WidgetRef for KeyboardWidget {
     }
 }
 
-// const NAV_KEY_X_START: u16 = 1 + CTRL_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W + 4 + SHIFT_R_W + 4;
+struct Key {
+    key_code: KeyCode,
+    area: Rect,
+}
+
+impl Key {
+    fn new(key_code: KeyCode, area: Rect) -> Self {
+        Self {
+            key_code,
+            area,
+        }
+    }
+}
+
+impl Widget for Key {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+
+    }
+}
+
 const NAV_KEY_X_START: u16 = 78;
 
 const KEY_W: u16 = 5; // includes | delimited
