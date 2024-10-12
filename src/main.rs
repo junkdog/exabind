@@ -6,6 +6,7 @@ mod app;
 mod input;
 mod tui;
 mod effect;
+mod parser;
 
 use app::ExabindApp;
 
@@ -23,9 +24,14 @@ fn main() -> io::Result<()> {
     let mut app = ExabindApp::new(events.sender());
     let mut tui = Tui::new(ratatui::init(), events);
 
-    let e = effect::key_press(Duration::from_millis(100), Color::Cyan)
-        .with_area(AnsiKeyboardTklLayout::default().key_area(KeyCode::Char('e')));
-    app.register_effect(e);
+
+    "exabind".char_indices().enumerate().for_each(|(i, c)| {
+        let kbd = AnsiKeyboardTklLayout::default();
+        let e = effect::key_press(Duration::from_millis(i as u32 * 150), Color::LightCyan)
+            .with_area(kbd.key_area(KeyCode::Char(c.1)));
+
+        app.register_effect(e);
+    });
 
     while app.is_running() {
         let elapsed = app.update_time();
@@ -53,11 +59,15 @@ fn effects(
 }
 
 fn ui(f: &mut Frame<'_>) {
+    if f.area().is_empty() {
+        return;
+    }
+
     Clear.render(f.area(), f.buffer_mut());
     Block::default()
         .style(Style::default().bg(Color::DarkGray))
         .render(f.area(), f.buffer_mut());
 
-    let kbd = KeyboardWidget::new();
+    let kbd = KeyboardWidget::new(AnsiKeyboardTklLayout::default().layout());
     kbd.render(f.area(), f.buffer_mut());
 }

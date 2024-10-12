@@ -9,13 +9,17 @@ pub fn key_press<C: Into<Color>>(key_press_delay: Duration, color: C) -> Effect 
 
     let c = color.into();
     let bg = Color::DarkGray;
+    // let bg = Color::Green;
 
     use tachyonfx::fx::*;
-    repeating(sequence(&[
-        // prolong_start(key_press_delay,
-            // fade_to(c, bg, (50, Interpolation::ExpoIn))),
-        fade_from(c, bg, (500, Interpolation::CircOut)),
-    ]).with_cell_selection(key_pad))
+    // sequence(&[
+    //     prolong_start(key_press_delay,
+    //         fade_to(c, bg, (50, Interpolation::Linear))),
+    //     fade_from(c, bg, (300, Interpolation::Linear)),
+    // ]).with_cell_selection(key_pad)
+
+    delay(key_press_delay, fade_from(c, bg, (300, Interpolation::Linear)))
+        .with_cell_selection(key_pad)
 }
 
 // fn draw_single_border<C: Into<Color>>() -> Effect {

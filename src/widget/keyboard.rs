@@ -1,7 +1,8 @@
 use crossterm::event::{KeyCode, ModifierKeyCode};
 use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::{Alignment, Offset, Rect, Size};
+use ratatui::layout::{Alignment, Margin, Offset, Rect, Size};
 use ratatui::prelude::{Color, Position};
+use ratatui::style::Style;
 use ratatui::text::{Span, Text};
 use ratatui::widgets::{Widget, WidgetRef};
 use tachyonfx::CellIterator;
@@ -9,14 +10,14 @@ use tachyonfx::CellIterator;
 
 // override with custom styles for key codes
 pub struct KeyboardWidget {
-
+    keys: Vec<Key>,
 }
 
 
 pub trait KeyboardLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect;
     fn key_position(&self, key_code: KeyCode) -> Position;
-    fn layout(&self) -> Vec<(KeyCode, Rect)>;
+    fn layout(&self) -> Vec<Key>;
 }
 
 #[derive(Default)]
@@ -26,7 +27,7 @@ macro_rules! kbd_layout {
     [$self:expr; $($key:expr),+ $(,)?] => {
         [
             $(
-                ($key, $self.key_area($key)),
+                Key::new($key, $self.key_area($key)),
             )+
         ]
     };
@@ -131,7 +132,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
         Position::new(x, y)
     }
 
-    fn layout(&self) -> Vec<(KeyCode, Rect)> {
+    fn layout(&self) -> Vec<Key> {
         use KeyCode::*;
         use ModifierKeyCode::*;
 
@@ -171,90 +172,84 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
     }
 }
 
+impl Into<Key> for (KeyCode, Rect) {
+    fn into(self) -> Key {
+        Key::new(self.0, self.1)
+    }
+}
+
 impl KeyboardWidget {
-    pub fn new() -> Self {
+    pub fn new(keys: Vec<Key>) -> Self {
         Self {
+            keys
+        }
+    }
+}
+
+impl WidgetRef for KeyboardWidget {
+    fn render_ref(
+        &self,
+        area: Rect,
+        buf: &mut Buffer
+    ) {
+        self.keys.iter()
+            .for_each(|w| w.render(Rect::default(), buf));
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Key {
+    key_code: KeyCode,
+    area: Rect,
+}
+
+impl Key {
+    pub fn new(key_code: KeyCode, area: Rect) -> Self {
+        Self {
+            key_code,
+            area,
         }
     }
 
-    fn draw_key_border(
-        decorate: char,
-        cell: &mut Cell,
-    ) {
-        let current = cell.symbol().chars().next().unwrap();
-        match decorate {
-            '└' => match current {
-                ' ' | '─' => cell.set_char('└'),
-                '┘' => cell.set_char('╨'),
-                '╡' => cell.set_char('╬'),
-                '┐' => cell.set_char('╪'),
-                '╩' => cell.set_char(current),
-                n => panic!("Invalid border character: {}", n),
-            },
-            '┌' => match current {
-                ' ' | '─' => cell.set_char('┌'),
-                '┘' => cell.set_char('╪'),
-                '╡' => cell.set_char('╫'),
-                '┤' => cell.set_char('╫'),
-                '┐' => cell.set_char('╥'),
-                '│' => cell.set_char(current),
-                '└' => cell.set_char('├'),
-                '╨' => cell.set_char('╫'),
-                '╫' => cell.set_char(current),
-                '╪' => cell.set_char('╫'),
-                n => panic!("Invalid border character: {}", n),
-            },
-            '┐' => match current {
-                ' ' | '─' => cell.set_char('┐'),
-                '┌' => cell.set_char('╥'),
-                '┘' => cell.set_char('┤'),
-                '└' => cell.set_char('╪'),
-                '╨' => cell.set_char('╫'),
-                n => panic!("Invalid border character: {}", n),
-            },
-            '┘' => match current {
-                ' ' | '─' => cell.set_char('┘'),
-                '┌' => cell.set_char('╪'),
-                '└' => cell.set_char('╨'),
-                n => panic!("Invalid border character: {}", n),
-            },
-            '│' => match current {
-                ' ' => cell.set_char('│'),
-                '│' => cell.set_char('║'),
-                // n => panic!("Invalid border character: {}", n),
-                _ => cell.set_char('|'),
-            },
-            _ => panic!("Invalid border character"),
-        };
-    }
+    pub fn render_border(&self, buf: &mut Buffer) {
+        let area = self.area;
 
-    fn render_key(key_code: KeyCode, area: Rect, buf: &mut Buffer) {
+        let draw_border = |d, cell: &mut Cell| {
+            let style = cell.style().fg(Color::Cyan);
+            draw_key_border(d, cell);
+            cell.set_style(style);
+        };
+
         // draw key border, left
         let (x, y) = (area.x, area.y);
-        Self::draw_key_border('┌', &mut buf[(x, y + 0)]);
-        Self::draw_key_border('│', &mut buf[(x, y + 1)]);
-        Self::draw_key_border('└', &mut buf[(x, y + 2)]);
+        draw_border('┌', &mut buf[(x, y + 0)]);
+        draw_border('│', &mut buf[(x, y + 1)]);
+        draw_border('└', &mut buf[(x, y + 2)]);
 
         // horizontal borders
         for x in area.x..area.x + area.width - 1 {
             let cell = &mut buf[(x, area.y + 0)];
             if cell.symbol() == " " {
                 cell.set_char('─');
+                cell.set_style(cell.style().fg(Color::Cyan));
             }
 
             let cell = &mut buf[(x, area.y + KEY_H - 1)];
             if cell.symbol() == " " {
                 cell.set_char('─');
+                cell.set_style(cell.style().fg(Color::Cyan));
             }
         }
 
         // draw key border, right
         let (x, y) = (area.x + area.width - 1, area.y);
-        Self::draw_key_border('┐', &mut buf[(x, y + 0)]);
-        Self::draw_key_border('│', &mut buf[(x, y + 1)]);
-        Self::draw_key_border('┘', &mut buf[(x, y + 2)]);
+        draw_border('┐', &mut buf[(x, y + 0)]);
+        draw_border('│', &mut buf[(x, y + 1)]);
+        draw_border('┘', &mut buf[(x, y + 2)]);
+    }
 
-        let key_string = match key_code {
+    pub fn render_keypad(&self, buf: &mut Buffer) {
+        let key_string = match self.key_code {
             KeyCode::Esc => "ESC".to_string(),
             KeyCode::F(n) => format!("F{}", n),
             KeyCode::Char(c) if c == ' ' => "␣".to_string(),
@@ -300,45 +295,81 @@ impl KeyboardWidget {
             },
         };
 
-        let alignment = if key_string.char_indices().count() > 1 { Alignment::Left } else { Alignment::Center };
+        let alignment = match key_string.char_indices().count() {
+            1 => Alignment::Center,
+            _ => Alignment::Left,
+        };
+
         Text::from(Span::from(key_string))
+            .style(Style::default().fg(Color::Cyan))
             .alignment(alignment)
-            .render(area.offset(Offset { x: 1, y: 1 }), buf);
-    }
-}
-
-impl WidgetRef for KeyboardWidget {
-    fn render_ref(
-        &self,
-        area: Rect,
-        buf: &mut Buffer
-    ) {
-        AnsiKeyboardTklLayout::default()
-            .layout()
-            .iter()
-            .filter(|(_, key_area)| area.union(*key_area) == area)
-            .for_each(|(key_code, area)| Self::render_key(*key_code, *area, buf));
-    }
-}
-
-struct Key {
-    key_code: KeyCode,
-    area: Rect,
-}
-
-impl Key {
-    fn new(key_code: KeyCode, area: Rect) -> Self {
-        Self {
-            key_code,
-            area,
-        }
+            .render(self.area.inner(Margin::new(1, 1)), buf);
     }
 }
 
 impl Widget for Key {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-
+    fn render(self, _area: Rect, buf: &mut Buffer) {
+        self.render_border(buf);
+        self.render_keypad(buf);
     }
+}
+
+impl WidgetRef for Key {
+    fn render_ref(&self, _area: Rect, buf: &mut Buffer) {
+        self.render_border(buf);
+        self.render_keypad(buf);
+    }
+}
+
+fn draw_key_border(
+    decorate: char,
+    cell: &mut Cell,
+) {
+    let current = cell.symbol().chars().next().unwrap();
+    match decorate {
+        '└' => match current {
+            ' ' | '─' => cell.set_char('└'),
+            '┘' => cell.set_char('╨'),
+            '╡' => cell.set_char('╬'),
+            '┐' => cell.set_char('╪'),
+            '╩' => cell.set_char(current),
+            n => panic!("Invalid border character: {}", n),
+        },
+        '┌' => match current {
+            ' ' | '─' => cell.set_char('┌'),
+            '┘' => cell.set_char('╪'),
+            '╡' => cell.set_char('╫'),
+            '┤' => cell.set_char('╫'),
+            '┐' => cell.set_char('╥'),
+            '│' => cell.set_char(current),
+            '└' => cell.set_char('├'),
+            '╨' => cell.set_char('╫'),
+            '╫' => cell.set_char(current),
+            '╪' => cell.set_char('╫'),
+            n => panic!("Invalid border character: {}", n),
+        },
+        '┐' => match current {
+            ' ' | '─' => cell.set_char('┐'),
+            '┌' => cell.set_char('╥'),
+            '┘' => cell.set_char('┤'),
+            '└' => cell.set_char('╪'),
+            '╨' => cell.set_char('╫'),
+            n => panic!("Invalid border character: {}", n),
+        },
+        '┘' => match current {
+            ' ' | '─' => cell.set_char('┘'),
+            '┌' => cell.set_char('╪'),
+            '└' => cell.set_char('╨'),
+            n => panic!("Invalid border character: {}", n),
+        },
+        '│' => match current {
+            ' ' => cell.set_char('│'),
+            '│' => cell.set_char('║'),
+            // n => panic!("Invalid border character: {}", n),
+            _ => cell.set_char('|'),
+        },
+        _ => panic!("Invalid border character"),
+    };
 }
 
 const NAV_KEY_X_START: u16 = 79;
@@ -362,3 +393,4 @@ const SPACE_W: u16 = 31;
 
 const SUPER_W: u16 = 6;
 const MENU_W: u16 = 6;
+
