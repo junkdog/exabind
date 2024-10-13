@@ -10,14 +10,14 @@ use tachyonfx::CellIterator;
 
 // override with custom styles for key codes
 pub struct KeyboardWidget {
-    keys: Vec<Key>,
+    keys: Vec<KeyCap>,
 }
 
 
 pub trait KeyboardLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect;
     fn key_position(&self, key_code: KeyCode) -> Position;
-    fn layout(&self) -> Vec<Key>;
+    fn layout(&self) -> Vec<KeyCap>;
 }
 
 #[derive(Default)]
@@ -27,7 +27,7 @@ macro_rules! kbd_layout {
     [$self:expr; $($key:expr),+ $(,)?] => {
         [
             $(
-                Key::new($key, $self.key_area($key)),
+                KeyCap::new($key, $self.key_area($key)),
             )+
         ]
     };
@@ -132,7 +132,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
         Position::new(x, y)
     }
 
-    fn layout(&self) -> Vec<Key> {
+    fn layout(&self) -> Vec<KeyCap> {
         use KeyCode::*;
         use ModifierKeyCode::*;
 
@@ -172,14 +172,14 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
     }
 }
 
-impl Into<Key> for (KeyCode, Rect) {
-    fn into(self) -> Key {
-        Key::new(self.0, self.1)
+impl Into<KeyCap> for (KeyCode, Rect) {
+    fn into(self) -> KeyCap {
+        KeyCap::new(self.0, self.1)
     }
 }
 
 impl KeyboardWidget {
-    pub fn new(keys: Vec<Key>) -> Self {
+    pub fn new(keys: Vec<KeyCap>) -> Self {
         Self {
             keys
         }
@@ -198,12 +198,12 @@ impl WidgetRef for KeyboardWidget {
 }
 
 #[derive(Debug, Clone)]
-pub struct Key {
+pub struct KeyCap {
     key_code: KeyCode,
     area: Rect,
 }
 
-impl Key {
+impl KeyCap {
     pub fn new(key_code: KeyCode, area: Rect) -> Self {
         Self {
             key_code,
@@ -307,14 +307,14 @@ impl Key {
     }
 }
 
-impl Widget for Key {
+impl Widget for KeyCap {
     fn render(self, _area: Rect, buf: &mut Buffer) {
         self.render_border(buf);
         self.render_keypad(buf);
     }
 }
 
-impl WidgetRef for Key {
+impl WidgetRef for KeyCap {
     fn render_ref(&self, _area: Rect, buf: &mut Buffer) {
         self.render_border(buf);
         self.render_keypad(buf);

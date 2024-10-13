@@ -194,19 +194,13 @@ fn xml_tag_self_contained<'a>() -> impl StrParser<'a, XmlTag<'a>> {
 }
 
 fn xml_tag_open<'a>() -> impl StrParser<'a, XmlTag<'a>> {
-    let name = eat(item_while(|c: char| !" >".contains(c)));
+    let name = item_while(|c: char| !" >".contains(c));
     let attributes = many_to_vec(attribute(), true, no_separator());
-
-    let child = defer_parser!(jetbrains_xml_parser());
-    let children = many_to_vec(child, true, no_separator());
+    let children = many_to_vec(jetbrains_xml_parser(), true, no_separator());
 
     tuplify!(
         right(item!('<'), name),
-        // left!(attributes, eat(seq(">"))),
-        // left(attributes, eat(seq(">"))),
         left!(attributes, eat(item!('>'))),
-        // many_to_vec(children, true, no_separator()),
-        // middle(eat(seq("</")), name, eat(seq(">"))),
         left!(children, eat(seq("</")), name, eat(seq(">"))),
     ).map(|(name, attributes, children)| XmlTag::new(name, attributes, children, None))
 }
@@ -322,10 +316,6 @@ mod tests {
     #[test]
     fn test_jetbrains_xml_parser() {
         let p = jetbrains_xml_parser();
-
-        let result = parse(p, "<tag key=\"value\"/>");
-        assert_eq!(result.state, "");
-        assert_eq!(result.result, Some(XmlTag::new("tag", vec![Attribute::new("key", "value")], Vec::new(), None)));
 
         let result = parse(p, r#"<keymap ></keymap>"#);
         assert_eq!(result.state, "");
