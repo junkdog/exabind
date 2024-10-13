@@ -5,11 +5,25 @@ use anpa::{create_parser, item, right, tuplify, variadic};
 use crate::parser::jetbrains::low_level::{attribute_value, eat};
 
 #[derive(Debug, PartialEq)]
-enum Xml {
+struct Attribute<'a> {
+    key: &'a str,
+    value: &'a str,
+}
+
+impl<'a> Attribute<'a> {
+    fn new(key: &'a str, value: &'a str) -> Self {
+        Self { key, value }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum Xml<'a> {
     Element,
-    Attribute(String, String),
+    Attribute(Attribute<'a>),
     Text,
-    Comment(String),
+    Comment(&'a str),
+    OpenXmlTag(&'a str, Vec<Attribute<'a>>),
+    CloseXmlTag(&'a str),
 }
 
 // example:
@@ -74,10 +88,10 @@ struct Shortcut {
     first_keystroke: String,
 }
 
-struct Element {
+struct Element<'a> {
     name: String,
     attributes: Vec<(String, String)>,
-    children: Vec<Xml>,
+    children: Vec<Xml<'a>>,
 }
 
 
@@ -92,46 +106,40 @@ mod low_level {
         item_while(|c: char| c.is_whitespace()).map(|_| ())
     }
 
-    pub(super) fn attribute_value<'a>() -> impl StrParser<'a, String> {
+    pub(super) fn attribute_value<'a>() -> impl StrParser<'a, &'a str> {
         let valid_char = item_if(|c: char| c != '"');
         middle(item!('"'), many(valid_char, true, no_separator()), item!('"')).into_type()
     }
 
-    pub(super) fn cdata<'a>() -> impl StrParser<'a, String> {
+    pub(super) fn cdata<'a>() -> impl StrParser<'a, &'a str> {
         let valid_char = item_if(|c: char| c != ']');
         middle(seq("<![CDATA["), many(valid_char, true, no_separator()), seq("]]>"))
             .into_type()
-            .map(|s: &str| s.trim().to_string())
+            .map(|s: &str| s.trim())
     }
 
-    pub(super) fn eat<'a>(p: impl StrParser<'a, String>) -> impl StrParser<'a, String> {
+    pub(super) fn eat<'a, O>(p: impl StrParser<'a, O>) -> impl StrParser<'a, O> {
         right(succeed(item_while(|c: char| c.is_whitespace())), p)
     }
 }
 
-fn comment<'a>() -> impl StrParser<'a, Xml> {
+fn comment<'a>() -> impl StrParser<'a, Xml<'a>> {
     right!(seq("<!--"), until_seq("-->"))
         .into_type()
-        .map(|s: &str| Xml::Comment(s.trim().to_string()))
+        .map(move |s: &str| Xml::Comment(s.trim()))
 }
 
-fn attribute<'a>() -> impl StrParser<'a, Xml> {
-    let name = item_while(|c: char| c.is_alphabetic() || c.is_numeric() || c == '_')
-        .map(String::from);
+fn attribute<'a>() -> impl StrParser<'a, Xml<'a>> {
+    let name = item_while(|c: char| c.is_alphabetic() || c.is_numeric() || c == '_');
     let key_value_parser = tuplify!(
-        left(eat(name), eat(item!('=').map(String::from))),
+        left(eat(name), eat(item!('='))),
         eat(attribute_value()),
     );
 
-    key_value_parser.map(|(key, value)| Xml::Attribute(key, value))
+    key_value_parser.map(|(key, value)| Xml::Attribute(Attribute::new(key, value)))
 }
 
-// fn start_tag<'a>() -> impl StrParser<'a, Xml> {
-//
-// }
-
 mod tests {
-    use std::result;
     use anpa::core::parse;
     use super::*;
 
@@ -150,7 +158,7 @@ mod tests {
             let result = parse(p, input);
 
             assert_eq!(result.state, "");
-            assert_eq!(result.result, Some(Xml::Comment("This is a comment".to_string())));
+            assert_eq!(result.result, Some(Xml::Comment("This is a comment")));
         });
     }
 
@@ -168,7 +176,7 @@ mod tests {
             let result = parse(p, input);
 
             assert_eq!(result.state, "");
-            assert_eq!(result.result, Some("This is a CDATA".to_string()));
+            assert_eq!(result.result, Some("This is a CDATA"));
         });
     }
 
@@ -178,7 +186,7 @@ mod tests {
         let result = parse(p, r#""This is a value" "#);
 
         assert_eq!(result.state, " ");
-        assert_eq!(result.result, Some("This is a value".to_string()));
+        assert_eq!(result.result, Some("This is a value"));
     }
 
     #[test]
@@ -190,8 +198,7 @@ mod tests {
             let p = attribute();
             let result = parse(p, s);
             assert_eq!(result.state, " ");
-            assert_eq!(result.result, Some(Xml::Attribute("name".to_string(), "value".to_string())));
+            assert_eq!(result.result, Some(Xml::Attribute(Attribute::new("name", "value"))));
         });
-
     }
 }
