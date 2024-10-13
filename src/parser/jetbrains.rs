@@ -1,8 +1,9 @@
 use anpa::core::{ParserExt, ParserInto, StrParser};
 use anpa::parsers::{item_if, item_while, seq, until_seq};
-use anpa::combinators::{get_parsed, left, many, middle, no_separator};
+use anpa::combinators::{get_parsed, left, many, many_to_vec, middle, no_separator, right, separator};
 use anpa::{create_parser, item, right, tuplify, variadic};
-use crate::parser::jetbrains::low_level::{attribute_value, eat};
+use crossterm::event::KeyCode;
+use crate::parser::jetbrains::low_level_parser::{attribute, attribute_value, eat};
 
 #[derive(Debug, PartialEq)]
 struct Attribute<'a> {
@@ -17,13 +18,26 @@ impl<'a> Attribute<'a> {
 }
 
 #[derive(Debug, PartialEq)]
+struct XmlTag<'a> {
+    name: &'a str,
+    attributes: Vec<Attribute<'a>>,
+    children: Vec<Xml<'a>>,
+}
+
+impl XmlTag<'_> {
+    fn new<'a>(name: &'a str, attributes: Vec<Attribute<'a>>, children: Vec<Xml<'a>>) -> XmlTag<'a> {
+        XmlTag { name, attributes, children }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 enum Xml<'a> {
-    Element,
+    Element(XmlTag<'a>),
     Attribute(Attribute<'a>),
-    Text,
     Comment(&'a str),
     OpenXmlTag(&'a str, Vec<Attribute<'a>>),
     CloseXmlTag(&'a str),
+    SelfContainedXmlTag(&'a str, Vec<Attribute<'a>>),
 }
 
 // example:
@@ -95,7 +109,7 @@ struct Element<'a> {
 }
 
 
-mod low_level {
+mod low_level_parser {
     use anpa::combinators::{many, middle, no_separator, right, succeed};
     use anpa::parsers::{item_if, item_while};
     use anpa::core::ParserInto;
@@ -121,26 +135,51 @@ mod low_level {
     pub(super) fn eat<'a, O>(p: impl StrParser<'a, O>) -> impl StrParser<'a, O> {
         right(succeed(item_while(|c: char| c.is_whitespace())), p)
     }
+
+    pub(super) fn attribute<'a>() -> impl StrParser<'a, Attribute<'a>> {
+        let name = item_while(|c: char| c.is_alphabetic() || c.is_numeric() || c == '_');
+
+        tuplify!(
+            left(eat(name), eat(item!('='))),
+            eat(attribute_value()),
+        ).map(|(key, value)| Attribute::new(key, value))
+    }
 }
 
 fn comment<'a>() -> impl StrParser<'a, Xml<'a>> {
     right!(seq("<!--"), until_seq("-->"))
-        .into_type()
-        .map(move |s: &str| Xml::Comment(s.trim()))
+        .map(|s: &str| Xml::Comment(s.trim()))
 }
 
-fn attribute<'a>() -> impl StrParser<'a, Xml<'a>> {
-    let name = item_while(|c: char| c.is_alphabetic() || c.is_numeric() || c == '_');
-    let key_value_parser = tuplify!(
-        left(eat(name), eat(item!('='))),
-        eat(attribute_value()),
-    );
+fn self_contained_tag<'a>() -> impl StrParser<'a, Xml<'a>> {
+    let name = item_while(|c: char| c != ' ' && c != '/');
+    let attributes = many_to_vec(attribute(), true, no_separator());
 
-    key_value_parser.map(|(key, value)| Xml::Attribute(Attribute::new(key, value)))
+    tuplify!(
+    right(eat(item!('<')), name),
+    left(attributes, eat(seq("/>")))
+).map(|(name, attributes)| Xml::SelfContainedXmlTag(name, attributes))
+}
+
+fn tag_open<'a>() -> impl StrParser<'a, Xml<'a>> {
+    let name = item_while(|c: char| c != ' ' && c != '/');
+    let attributes = many_to_vec(attribute(), true, no_separator());
+
+    tuplify!(
+        right(eat(item!('<')), name),
+        left(attributes, eat(item!('>')))
+    ).map(|(name, attributes)| Xml::OpenXmlTag(name, attributes))
+}
+
+fn tag_close<'a>() -> impl StrParser<'a, Xml<'a>> {
+    right!(seq("</"), item_while(|c: char| c != '>'))
+        .map(Xml::CloseXmlTag)
 }
 
 mod tests {
     use anpa::core::parse;
+    use crate::parser::jetbrains::low_level_parser::cdata;
+    use crate::parser::jetbrains::{comment, self_contained_tag, tag_open};
     use super::*;
 
     #[test]
@@ -172,7 +211,7 @@ mod tests {
 
             ]]>"#,
         ].iter().for_each(|input| {
-            let p = low_level::cdata();
+            let p = cdata();
             let result = parse(p, input);
 
             assert_eq!(result.state, "");
@@ -182,7 +221,7 @@ mod tests {
 
     #[test]
     fn parse_attribute_value() {
-        let p = low_level::attribute_value();
+        let p = attribute_value();
         let result = parse(p, r#""This is a value" "#);
 
         assert_eq!(result.state, " ");
@@ -198,7 +237,35 @@ mod tests {
             let p = attribute();
             let result = parse(p, s);
             assert_eq!(result.state, " ");
-            assert_eq!(result.result, Some(Xml::Attribute(Attribute::new("name", "value"))));
+            assert_eq!(result.result, Some(Attribute::new("name", "value")));
         });
+    }
+
+    #[test]
+    fn parse_open_tag() {
+        let p = tag_open();
+        let result = parse(p, "<tag key=\"value\">");
+
+        assert_eq!(result.state, "");
+        assert_eq!(result.result, Some(Xml::OpenXmlTag("tag", vec![Attribute::new("key", "value")])));
+
+        let result = parse(p, "<tag key=\"value\" key2=\"value2\">");
+
+        assert_eq!(result.state, "");
+        assert_eq!(result.result, Some(Xml::OpenXmlTag("tag", vec![Attribute::new("key", "value"), Attribute::new("key2", "value2")])));
+
+        let result = parse(p, "<tag key=\"value\" key2=\"value2\" key3=\"value3\">");
+
+        assert_eq!(result.state, "");
+        assert_eq!(result.result, Some(Xml::OpenXmlTag("tag", vec![Attribute::new("key", "value"), Attribute::new("key2", "value2"), Attribute::new("key3", "value3")])));
+    }
+
+    #[test]
+    fn parse_self_contained_tag() {
+        let p = self_contained_tag();
+        let result = parse(p, "<tag key=\"value\"/>");
+
+        assert_eq!(result.state, "");
+        assert_eq!(result.result, Some(Xml::SelfContainedXmlTag("tag", vec![Attribute::new("key", "value")])));
     }
 }
