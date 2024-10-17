@@ -1,7 +1,7 @@
 use anpa::combinators::{attempt, left, many, many_to_vec, middle, no_separator, right, succeed};
 use anpa::core::{ParserExt, StrParser};
-use anpa::{create_parser, defer_parser, item, left, or, right, tuplify, variadic};
-use anpa::parsers::{item_if, item_while, seq, until_seq};
+use anpa::{create_parser, defer_parser, left, or, right, skip, tuplify, variadic};
+use anpa::parsers::{empty, item_if, item_while, skip, until};
 use crate::parser::core::eat;
 
 #[derive(Debug, PartialEq)]
@@ -80,11 +80,11 @@ impl<'a> Attribute<'a> {
 }
 
 fn comment<'a>() -> impl StrParser<'a, &'a str> {
-    eat(right(seq("<!--"), until_seq("-->")))
+    eat(right(skip("<!--"), until("-->")))
 }
 
 fn attribute_value<'a>() -> impl StrParser<'a, &'a str> {
-    right(item!('"'), until_seq("\""))
+    right(skip!('"'), until("\""))
 }
 
 fn name_parser<'a>() -> impl StrParser<'a, &'a str> {
@@ -93,64 +93,49 @@ fn name_parser<'a>() -> impl StrParser<'a, &'a str> {
 
 fn cdata<'a>() -> impl StrParser<'a, &'a str> {
     let valid_char = item_if(|c: char| c != ']');
-    middle(seq("<![CDATA["), many(valid_char, true, no_separator()), seq("]]>"))
+    middle(skip("<![CDATA["), many(valid_char, true, no_separator()), skip("]]>"))
         .map(|s: &str| s.trim())
 }
 
 fn attribute<'a>() -> impl StrParser<'a, Attribute<'a>> {
     tuplify!(
-        left(eat(name_parser()), eat(until_seq("="))),
+        left(eat(name_parser()), eat(skip("="))),
         eat(attribute_value()),
     ).map(|(key, value)| Attribute::new(key.trim(), value))
 }
 
-fn xml_tag_with_children<'a>() -> impl StrParser<'a, XmlTag<'a>> {
-    let attributes = attempt(many_to_vec(attribute(), true, no_separator()));
-    let child_tags = attempt(many_to_vec(xml_parser(), true, no_separator()));
-
-    let closing_tag = right!(succeed(item!('<')), item!('/'), name_parser(), eat(seq(">")));
+fn xml_tag<'a>() -> impl StrParser<'a, XmlTag<'a>> {
+    let attributes = many_to_vec(attribute(), true, no_separator());
+    let child_tags = many_to_vec(xml_parser(), true, no_separator());
+    let closing_tag = right!(succeed(skip('<')), skip('/'), name_parser(), eat(skip(">")));
     let comments = many_to_vec(comment(), true, no_separator());
-
-    tuplify!(
-        right!(comments, eat(item!('<')), name_parser()), // (discard comments) <tag
-        left!(attributes, eat(seq(">")), comments),       // key="value"...> (discard comments)
-        left!(child_tags, closing_tag),                   // recurse children
-    ).map(|(name, attributes, children)| {
-        if children.is_empty() {
-            XmlTag::new(name, attributes)
-        } else {
-            XmlTag::with_children(name, attributes, children)
-        }
-    })
-}
-
-fn xml_tag_with_text<'a>() -> impl StrParser<'a, XmlTag<'a>> {
-    let attributes = attempt(many_to_vec(attribute(), true, no_separator()));
-    let closing_tag = right!(seq("</"), name_parser(), eat(item!('>')));
     let text = eat(item_while(|c: char| c != '<'));
 
-    let dummy_text = eat(item_while(|c: char| c == ' '));
-    let comments = many_to_vec(comment(), true, no_separator());
-
     tuplify!(
-        right!(comments, item!('<'), name_parser()),
-        attributes,
+        right!(comments, eat(skip('<')), name_parser()), // (discard comments) <tag
+        attributes,                                      // key="value"...>
         or!(
-            seq("/>"),
-            middle(eat(item!('>')), text, closing_tag),
+            // recurse children
+            middle(left!(eat(skip('>')), comments), child_tags, closing_tag)
+                .map(|children| Some(NodeContent::Tags(children))),
+
+            // self-contained tag <.../>
+            eat(skip("/>")).map(|_| None),
+
+            // empty tag <...></tag>
+            left(eat(skip('>')), closing_tag)
+                .map(|_| None),
+
+            // *text*</tag>
+           middle(eat(skip('>')), text, closing_tag)
+                .map(|text| Some(NodeContent::Text(text.trim()))),
         )
-    ).map(|(name, attributes, text)| {
-        if text == "/>" {
-            XmlTag::new(name, attributes)
-        } else {
-            XmlTag::with_text(name, attributes, text.trim())
-        }
-    })
+    ).map(|(name, attributes, content)| XmlTag { name, attributes, content})
 }
 
 pub(super) fn xml_parser<'a>() -> impl StrParser<'a, XmlTag<'a>> {
     defer_parser! {
-        eat(or!(xml_tag_with_text(), xml_tag_with_children()))
+        eat(xml_tag())
     }
 }
 

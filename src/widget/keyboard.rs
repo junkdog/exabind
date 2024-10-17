@@ -189,7 +189,7 @@ impl KeyboardWidget {
 impl WidgetRef for KeyboardWidget {
     fn render_ref(
         &self,
-        area: Rect,
+        _area: Rect,
         buf: &mut Buffer
     ) {
         self.keys.iter()

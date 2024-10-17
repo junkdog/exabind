@@ -22,9 +22,9 @@ checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 
 [[package]]
 name = "anpa"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f7dfd1f7d454c9e1e4f3594547f194165a621f795bdb5512d6e0339f329040c"
+checksum = "95c74561f3ef0e0c7456472255b13f8e527292d27a65014800e74622635bcb1c"
 
 [[package]]
 name = "autocfg"
