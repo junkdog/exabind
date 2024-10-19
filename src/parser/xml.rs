@@ -1,8 +1,9 @@
-use anpa::combinators::{attempt, left, many, many_to_vec, middle, no_separator, right, succeed};
-use anpa::core::{ParserExt, StrParser};
-use anpa::{create_parser, defer_parser, left, or, right, skip, tuplify, variadic};
-use anpa::parsers::{empty, item_if, item_while, skip, until};
 use crate::parser::core::eat;
+use anpa::combinators::{left, many, many_to_vec, middle, no_separator, not_empty, right, succeed};
+use anpa::core::{ParserExt, StrParser};
+use anpa::parsers::{item_if, item_while, skip, until};
+use anpa::{create_parser, defer_parser, left, or, right, skip, tuplify, variadic};
+use anpa::whitespace::ascii_whitespace;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct XmlTag<'a> {
@@ -24,14 +25,6 @@ enum NodeContent<'a> {
 }
 
 impl XmlTag<'_> {
-    fn with_children<'a>(
-        name: &'a str,
-        attributes: Vec<Attribute<'a>>,
-        children: Vec<XmlTag<'a>>,
-    ) -> XmlTag<'a> {
-        XmlTag { name, attributes, content: Some(NodeContent::Tags(children)) }
-    }
-
     fn with_text<'a>(
         name: &'a str,
         attributes: Vec<Attribute<'a>>,
@@ -106,31 +99,31 @@ fn attribute<'a>() -> impl StrParser<'a, Attribute<'a>> {
 
 fn xml_tag<'a>() -> impl StrParser<'a, XmlTag<'a>> {
     let attributes = many_to_vec(attribute(), true, no_separator());
-    let child_tags = many_to_vec(xml_parser(), true, no_separator());
-    let closing_tag = right!(succeed(skip('<')), skip('/'), name_parser(), eat(skip(">")));
+    let child_tags = many_to_vec(xml_parser(), false, no_separator());
+    let closing_tag = eat(right!(succeed(skip('<')), skip('/'), name_parser(), eat(skip(">")), eat(ascii_whitespace())));
     let comments = many_to_vec(comment(), true, no_separator());
     let text = eat(item_while(|c: char| c != '<'));
 
     tuplify!(
         right!(comments, eat(skip('<')), name_parser()), // (discard comments) <tag
         attributes,                                      // key="value"...>
-        or!(
+        eat(or!(
             // recurse children
-            middle(left!(eat(skip('>')), comments), child_tags, closing_tag)
+            middle(left!(skip('>'), comments), child_tags, closing_tag)
                 .map(|children| Some(NodeContent::Tags(children))),
 
             // or; self-contained tag <.../>
-            eat(skip("/>")).map(|_| None),
+            skip("/>").map(|_| None),
 
             // or; empty tag <...></tag>
-            left(eat(skip('>')), closing_tag)
+            left(skip('>'), closing_tag)
                 .map(|_| None),
 
             // or; *text*</tag>
-           middle(eat(skip('>')), text, closing_tag)
+           middle(skip('>'), text, closing_tag)
                 .map(|text| Some(NodeContent::Text(text.trim()))),
         )
-    ).map(|(name, attributes, content)| XmlTag { name, attributes, content })
+    )).map(|(name, attributes, content)| XmlTag { name, attributes, content })
 }
 
 pub(super) fn xml_parser<'a>() -> impl StrParser<'a, XmlTag<'a>> {
@@ -138,9 +131,11 @@ pub(super) fn xml_parser<'a>() -> impl StrParser<'a, XmlTag<'a>> {
 }
 
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use anpa::core::parse;
+    use crate::parser::xml::NodeContent::Tags;
 
     #[test]
     fn test_cdata() {
@@ -198,8 +193,17 @@ mod tests {
     #[test]
     fn parse_self_contained_xml_tag() {
         let p = xml_parser();
-        let result = parse(p, "<tag key=\"value\"/>");
+        let result = parse(p, "<tag></tag>");
+        assert_eq!(result.state, "");
+        assert_eq!(result.result, Some(XmlTag::new("tag", vec![])));
 
+        let p = xml_parser();
+        let result = parse(p, "<tag/>");
+        assert_eq!(result.state, "");
+        assert_eq!(result.result, Some(XmlTag::new("tag", vec![])));
+
+        let p = xml_parser();
+        let result = parse(p, "<tag key=\"value\"/>");
         assert_eq!(result.state, "");
         assert_eq!(result.result, Some(XmlTag::new("tag", vec![Attribute::new("key", "value")])));
 
@@ -231,6 +235,23 @@ mod tests {
     }
 
     #[test]
+    fn parse_tag_with_children() {
+        let result = parse(xml_parser(), "<child key=\"value\">\n        </child>");
+        assert_eq!(result.state, "");
+        assert_eq!(result.result, Some(XmlTag::new("child", vec![Attribute::new("key", "value")])));
+
+        let p = xml_parser();
+        let result = parse(p, r#"<tag> <child/></tag>"#);
+
+        assert_eq!(result.state, "");
+        assert_eq!(result.result, Some(XmlTag {
+            name: "tag",
+            attributes: Vec::new(),
+            content: Some(Tags(vec![XmlTag { name: "child", attributes: vec![], content: None }]))
+        }));
+    }
+
+    #[test]
     fn test_jetbrains_xml_parser() {
         let p = xml_parser();
 
@@ -241,53 +262,5 @@ mod tests {
         let result = parse(p, r#"<keymap version="1" name="Eclipse copy" parent="Eclipse"></keymap>"#);
         assert_eq!(result.state, "");
         assert_eq!(result.result, Some(XmlTag::new("keymap", vec![Attribute::new("version", "1"), Attribute::new("name", "Eclipse copy"), Attribute::new("parent", "Eclipse")])));
-
-
-        let result = parse(p, r#"<keymap version="1" name="Eclipse copy" parent="Eclipse">
-    <action id="$Copy">
-        <keyboard-shortcut first-keystroke="ctrl c" />
-    </action>
-    <action id="$Redo">
-        <keyboard-shortcut first-keystroke="shift ctrl z" />
-    </action>
-    <action id=":cursive.repl.actions/jump-to-repl">
-        <keyboard-shortcut first-keystroke="ctrl 2" />
-    </action>
-    <action id=":cursive.repl.actions/run-last-sexp">
-        <keyboard-shortcut first-keystroke="ctrl 3" />
-    </action>
-    <action id=":cursive.repl.actions/sync-files">
-        <keyboard-shortcut first-keystroke="shift ctrl r" />
-    </action>
-    <action id="ActivateMavenProjectsToolWindow">
-        <keyboard-shortcut first-keystroke="f2" />
-    </action>
-    <action id="Build">
-        <keyboard-shortcut first-keystroke="ctrl f9" />
-    </action>
-    <action id="BuildProject">
-        <keyboard-shortcut first-keystroke="ctrl b" />
-    </action>
-    <action id="ChooseDebugConfiguration">
-        <keyboard-shortcut first-keystroke="alt d" />
-    </action>
-    <action id="ChooseRunConfiguration">
-        <keyboard-shortcut first-keystroke="alt r" />
-    </action>
-    <action id="CloseActiveTab" />
-    <action id="CloseContent">
-        <keyboard-shortcut first-keystroke="ctrl w" />
-    </action>
-    <action id="CollapseAll">
-        <keyboard-shortcut first-keystroke="ctrl subtract" />
-    </action>
-    <action id="CollapseAllRegions">
-        <keyboard-shortcut first-keystroke="shift ctrl divide" />
-        <keyboard-shortcut first-keystroke="ctrl minus" />
-    </action>
-</keymap>"#);
-
-        assert_eq!(result.state, "");
-        assert_eq!(result.result, Some(XmlTag::with_children("tag", vec![Attribute::new("key", "value")], vec![XmlTag::new("tag2", vec![Attribute::new("key2", "value2")])])));
     }
 }

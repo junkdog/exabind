@@ -8,3 +8,4 @@ anpa = "0.6.0"
 crossterm = "0.28.1"
 ratatui = { version = "0.28.1", features = ["unstable-widget-ref"] }
 tachyonfx = "0.7.0"
+zip = "2.2.0"

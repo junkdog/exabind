@@ -58,35 +58,78 @@ mod parser {
 
     fn as_keycode(key: &str) -> KeyCode {
         use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
-
-        match key {
-            c if c.len() == 1 => Char(c.chars().next().unwrap()),
-            "ctrl"            => Modifier(LeftControl),
-            "shift"           => Modifier(LeftShift),
-            "alt"             => Modifier(LeftAlt),
-            "minus"           => Char('-'),
-            "subtract"        => Char('-'),
-            "divide"          => Char('/'),
-            "plus"            => Char('+'),
-            "f1"              => F(1),
-            "f2"              => F(2),
-            "f3"              => F(3),
-            "f4"              => F(4),
-            "f5"              => F(5),
-            "f6"              => F(6),
-            "f7"              => F(7),
-            "f8"              => F(8),
-            "f9"              => F(9),
-            "f10"             => F(10),
-            "f11"             => F(11),
-            "f12"             => F(12),
-            k                 => Esc,
-            // k                 => panic!("Unknown key: '{}'", k),
+        let lowercase = key.to_lowercase();
+        match lowercase.as_str() {
+            c if c.len() == 1    => Char(c.chars().next().unwrap()),
+            "ctrl" | "control"   => Modifier(LeftControl),
+            "shift"              => Modifier(LeftShift),
+            "alt"                => Modifier(LeftAlt),
+            "tab"                => Tab,
+            "enter"              => Enter,
+            "back_space"         => Backspace,
+            "delete"             => Delete,
+            "insert"             => Insert,
+            "home"               => Home,
+            "end"                => End,
+            "page_up"            => PageUp,
+            "page_down"          => PageDown,
+            "left"               => Left,
+            "right"              => Right,
+            "up"                 => Up,
+            "down"               => Down,
+            "context_menu"       => Menu,
+            "back_quote"         => Char('`'),
+            "close_bracket"      => Char(']'),
+            "open_bracket"       => Char('['),
+            "space"              => Char(' '),
+            "minus" | "subtract" => Char('-'),
+            "divide"             => Char('/'),
+            "multiply"           => Char('*'),
+            "slash"              => Char('/'),
+            "back_slash"         => Char('\\'),
+            "plus" | "add"       => Char('+'),
+            "equals"             => Char('='),
+            "comma"              => Char(','),
+            "period"             => Char('.'),
+            "semicolon"          => Char(';'),
+            "cancel"             => Esc, // fixme for the time being
+            "numpad0"            => Esc, // fixme for the time being
+            "numpad1"            => Esc, // fixme for the time being
+            "numpad2"            => Esc, // fixme for the time being
+            "numpad3"            => Esc, // fixme for the time being
+            "numpad4"            => Esc, // fixme for the time being
+            "numpad5"            => Esc, // fixme for the time being
+            "numpad6"            => Esc, // fixme for the time being
+            "numpad7"            => Esc, // fixme for the time being
+            "numpad8"            => Esc, // fixme for the time being
+            "numpad9"            => Esc, // fixme for the time being
+            "f1"                 => F(1),
+            "f2"                 => F(2),
+            "f3"                 => F(3),
+            "f4"                 => F(4),
+            "f5"                 => F(5),
+            "f6"                 => F(6),
+            "f7"                 => F(7),
+            "f8"                 => F(8),
+            "f9"                 => F(9),
+            "f10"                => F(10),
+            "f11"                => F(11),
+            "f12"                => F(12),
+            "quote"              => Char('"'),
+            "pause"              => Pause,
+            "escape" | "esc"     => Esc,
+            "back_tab"           => BackTab,
+            "scroll_lock"        => ScrollLock,
+            "num_lock"           => NumLock,
+            "print_screen"       => PrintScreen,
+            "menu"               => Menu,
+            // k                  => Esc,
+            k                    => panic!("Unknown key: '{}'", k),
         }
     }
 
     pub fn keycode_parser<'a>() -> impl StrParser<'a, KeyCode> {
-        not_empty(item_while(|c: char| c.is_ascii_alphanumeric()))
+        not_empty(item_while(|c: char| c.is_ascii_alphanumeric() || c == '_'))
             .map(as_keycode)
     }
 
@@ -135,7 +178,7 @@ fn as_keymap(xml: XmlTag<'_>) -> KeyMap {
 
 pub fn parse_jetbrains_keymap<'a>(input: &'a str) -> Option<KeyMap> {
     let res = parse(xml_parser(), input);
-    debug_assert!(res.state.is_empty());
+    debug_assert!(res.state.is_empty(), "Unparsed: '{}'", res.state);
     res.result.map(as_keymap)
 }
 
@@ -143,6 +186,7 @@ pub fn parse_jetbrains_keymap<'a>(input: &'a str) -> Option<KeyMap> {
 mod tests {
     use std::io::Read;
     use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
+    use zip::read::ZipArchive;
     use super::*;
 
     #[test]
@@ -212,7 +256,53 @@ mod tests {
     #[test]
     fn parse_user_keymap_file() -> std::io::Result<()> {
         let mut input = String::new();
-        let mut f = std::fs::File::open("./Eclipse copy.xml")?;
+        let mut f = std::fs::File::open("./test/Eclipse copy.xml")?;
+        f.read_to_string(&mut input)?;
+
+        let keymap = parse_jetbrains_keymap(&input).unwrap();
+        println!("{}", keymap);
+
+        Ok(())
+    }
+
+    #[test]
+    fn read_keymap_from_eclipse_plugin_jar() -> std::io::Result<()> {
+        let mut input = String::new();
+        let mut f = std::fs::File::open("./test/keymap-eclipse.jar")?;
+
+        let mut archive = ZipArchive::new(f)?;
+        archive
+            .by_name("keymaps/Eclipse.xml")
+            .map(|mut f| f.read_to_string(&mut input))?
+            .expect("parsable xml");
+
+        let keymap = parse_jetbrains_keymap(&input).unwrap();
+        println!("{}", keymap);
+
+        Ok(())
+    }
+
+    #[test]
+    fn read_keymap_from_vs_plugin_jar() -> std::io::Result<()> {
+        let mut input = String::new();
+        let mut f = std::fs::File::open("./test/keymap-visualStudio.jar")?;
+
+        let mut archive = ZipArchive::new(f)?;
+        archive
+            .by_name("keymaps/Visual Studio.xml")
+            .map(|mut f| f.read_to_string(&mut input))?
+            .expect("parsable xml");
+
+        let keymap = parse_jetbrains_keymap(&input).unwrap();
+        println!("{}", keymap);
+
+        Ok(())
+    }
+
+    #[test]
+    fn read_keymap_from_default() -> std::io::Result<()> {
+        let mut input = String::new();
+        let mut f = std::fs::File::open("./test/default.xml")?;
         f.read_to_string(&mut input)?;
 
         let keymap = parse_jetbrains_keymap(&input).unwrap();
