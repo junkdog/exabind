@@ -7,11 +7,12 @@ mod input;
 mod tui;
 mod effect;
 mod parser;
+mod crossterm;
 
 use app::ExabindApp;
 
 use std::io;
-use crossterm::event::KeyCode;
+use ::crossterm::event::KeyCode;
 use ratatui::prelude::{Color, Frame, Line, Style, Stylize, Text, Widget};
 use ratatui::widgets::{Block, Clear};
 use tachyonfx::{fx, CenteredShrink, Duration, Effect, Shader};

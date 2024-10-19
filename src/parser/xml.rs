@@ -49,11 +49,15 @@ impl XmlTag<'_> {
 }
 
 impl XmlTag<'_> {
+    pub(super) fn name(&self) -> &str {
+        self.name
+    }
+
     pub(super) fn children(&self) -> &[XmlTag<'_>] {
         static EMPTY: [XmlTag; 0] = [];
         match &self.content {
             Some(NodeContent::Tags(children)) => &children,
-            _ => &EMPTY,
+            _                                 => &EMPTY,
         }
     }
 
@@ -62,10 +66,6 @@ impl XmlTag<'_> {
             Some(NodeContent::Text(text)) => Some(text),
             _ => None,
         }
-    }
-
-    pub(super) fn has_attribute(&self, name: &str) -> &str {
-        self.attributes.iter().find(|a| a.name == name).map(|a| a.value).unwrap_or("")
     }
 
     pub(super) fn attribute(&self, name: &str) -> Option<&str> {
@@ -119,24 +119,22 @@ fn xml_tag<'a>() -> impl StrParser<'a, XmlTag<'a>> {
             middle(left!(eat(skip('>')), comments), child_tags, closing_tag)
                 .map(|children| Some(NodeContent::Tags(children))),
 
-            // self-contained tag <.../>
+            // or; self-contained tag <.../>
             eat(skip("/>")).map(|_| None),
 
-            // empty tag <...></tag>
+            // or; empty tag <...></tag>
             left(eat(skip('>')), closing_tag)
                 .map(|_| None),
 
-            // *text*</tag>
+            // or; *text*</tag>
            middle(eat(skip('>')), text, closing_tag)
                 .map(|text| Some(NodeContent::Text(text.trim()))),
         )
-    ).map(|(name, attributes, content)| XmlTag { name, attributes, content})
+    ).map(|(name, attributes, content)| XmlTag { name, attributes, content })
 }
 
 pub(super) fn xml_parser<'a>() -> impl StrParser<'a, XmlTag<'a>> {
-    defer_parser! {
-        eat(xml_tag())
-    }
+    defer_parser!(eat(xml_tag()))
 }
 
 

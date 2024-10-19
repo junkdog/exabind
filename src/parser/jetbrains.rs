@@ -1,10 +1,14 @@
+use std::fmt::Display;
+use anpa::core::{parse, StrParser};
 use crossterm::event::KeyCode;
+use crate::crossterm::format_keycode;
+use crate::parser::xml::{xml_parser, XmlTag};
 
 #[derive(Debug)]
 struct KeyMap {
     version: String,
     name: String,
-    parent: String,
+    parent: Option<String>,
     actions: Vec<Action>,
 }
 
@@ -19,10 +23,38 @@ struct Shortcut {
     keystroke: Vec<KeyCode>,
 }
 
+impl Display for KeyMap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let format = |action: &Action| format!("\t{}", action.to_string());
+        let parent = self.parent.as_ref().map(|s| s.as_str()).unwrap_or("");
+        let actions = self.actions.iter().map(format).collect::<Vec<_>>().join("\n");
+        write!(f, "keymap name={} parent={}:\n{}", self.name, parent, actions)
+    }
+}
+
+impl Display for Shortcut {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let keystroke = self.keystroke.iter()
+            .map(|k| format_keycode(*k))
+            .collect::<Vec<_>>()
+            .join(" ");
+        write!(f, "{}", keystroke)
+    }
+}
+
+impl Display for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let shortcuts = self.shortcuts.iter().map(Shortcut::to_string).collect::<Vec<_>>().join(", ");
+        write!(f, "{}: {}", self.id, shortcuts)
+    }
+}
+
 mod parser {
-    use anpa::core::{ParserExt, StrParser};
-    use anpa::parsers::item_while;
+    use anpa::combinators::{many_to_vec, no_separator, not_empty};
+    use anpa::core::{parse, ParserExt, StrParser};
+    use anpa::parsers::{item_while};
     use crossterm::event::KeyCode;
+    use crate::parser::core::eat;
 
     fn as_keycode(key: &str) -> KeyCode {
         use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
@@ -34,6 +66,7 @@ mod parser {
             "alt"             => Modifier(LeftAlt),
             "minus"           => Char('-'),
             "subtract"        => Char('-'),
+            "divide"          => Char('/'),
             "plus"            => Char('+'),
             "f1"              => F(1),
             "f2"              => F(2),
@@ -47,17 +80,144 @@ mod parser {
             "f10"             => F(10),
             "f11"             => F(11),
             "f12"             => F(12),
-            _                 => panic!("Unknown key: {}", key),
+            k                 => Esc,
+            // k                 => panic!("Unknown key: '{}'", k),
         }
     }
 
-    fn parse_key<'a>() -> impl StrParser<'a, KeyCode> {
-        item_while(|c: char| c.is_ascii_alphanumeric()).map(as_keycode)
+    pub fn keycode_parser<'a>() -> impl StrParser<'a, KeyCode> {
+        not_empty(item_while(|c: char| c.is_ascii_alphanumeric()))
+            .map(as_keycode)
+    }
+
+    pub(super) fn parse_keycodes<'a>(input: &'a str) -> Vec<KeyCode> {
+        let p = many_to_vec(eat(keycode_parser()), true, no_separator());
+        parse(p, input).result.unwrap()
     }
 }
 
+fn as_shortcut(keyboard_shortcut_node: &XmlTag<'_>) -> Shortcut {
+    debug_assert!(keyboard_shortcut_node.name() == "keyboard-shortcut");
 
-// fn jetbrains_xml_parser<'a>() -> impl StrParser<'a, XmlTag<'a>> {
-//     xml_tag_parser()
-// }
+    let keystroke = keyboard_shortcut_node
+        .attribute("first-keystroke")
+        .map(|s| parser::parse_keycodes(&s))
+        .unwrap_or_default();
 
+    Shortcut { keystroke }
+}
+
+fn as_action(action_node: &XmlTag<'_>) -> Action {
+    debug_assert!(action_node.name() == "action");
+
+    let id = action_node.attribute("id").expect("id to be present").to_string();
+    let shortcuts = action_node.children()
+        .iter()
+        .filter(|c| c.name() == "keyboard-shortcut")
+        .map(as_shortcut)
+        .collect();
+
+    Action { id, shortcuts }
+}
+
+fn as_keymap(xml: XmlTag<'_>) -> KeyMap {
+    KeyMap {
+        version: xml.attribute("version").expect("version to be present").to_string(),
+        name: xml.attribute("name").expect("name to be present").to_string(),
+        parent: xml.attribute("parent").map(|s| s.to_string()),
+        actions: xml.children()
+            .iter()
+            .filter(|c| c.name() == "action")
+            .map(as_action)
+            .collect(),
+    }
+}
+
+pub fn parse_jetbrains_keymap<'a>(input: &'a str) -> Option<KeyMap> {
+    let res = parse(xml_parser(), input);
+    debug_assert!(res.state.is_empty());
+    res.result.map(as_keymap)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Read;
+    use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
+    use super::*;
+
+    #[test]
+    fn parse_keycode() {
+        let p = parser::keycode_parser();
+        let res = parse(p, "ctrl ");
+        assert_eq!(res.state, " ");
+        assert_eq!(res.result.unwrap(), Modifier(LeftControl));
+    }
+
+    #[test]
+    fn parse_keycodes() {
+        let input = "ctrl shift a";
+        let key_codes = parser::parse_keycodes(input);
+        assert_eq!(key_codes, vec![Modifier(LeftControl), Modifier(LeftShift), Char('a')]);
+    }
+
+    #[test]
+    fn test_jetbrains_xml_parser() {
+        let input = r#"<keymap version="1" name="Eclipse copy" parent="Eclipse">
+    <action id="$Copy">
+        <keyboard-shortcut first-keystroke="ctrl c" />
+    </action>
+    <action id="$Redo">
+        <keyboard-shortcut first-keystroke="shift ctrl z" />
+    </action>
+    <action id=":cursive.repl.actions/jump-to-repl">
+        <keyboard-shortcut first-keystroke="ctrl 2" />
+    </action>
+    <action id=":cursive.repl.actions/run-last-sexp">
+        <keyboard-shortcut first-keystroke="ctrl 3" />
+    </action>
+    <action id=":cursive.repl.actions/sync-files">
+        <keyboard-shortcut first-keystroke="shift ctrl r" />
+    </action>
+    <action id="ActivateMavenProjectsToolWindow">
+        <keyboard-shortcut first-keystroke="f2" />
+    </action>
+    <action id="Build">
+        <keyboard-shortcut first-keystroke="ctrl f9" />
+    </action>
+    <action id="BuildProject">
+        <keyboard-shortcut first-keystroke="ctrl b" />
+    </action>
+    <action id="ChooseDebugConfiguration">
+        <keyboard-shortcut first-keystroke="alt d" />
+    </action>
+    <action id="ChooseRunConfiguration">
+        <keyboard-shortcut first-keystroke="alt r" />
+    </action>
+    <action id="CloseActiveTab" />
+    <action id="CloseContent">
+        <keyboard-shortcut first-keystroke="ctrl w" />
+    </action>
+    <action id="CollapseAll">
+        <keyboard-shortcut first-keystroke="ctrl subtract" />
+    </action>
+    <action id="CollapseAllRegions">
+        <keyboard-shortcut first-keystroke="shift ctrl divide" />
+        <keyboard-shortcut first-keystroke="ctrl minus" />
+    </action>
+</keymap>"#;
+        let keymap = parse_jetbrains_keymap(input).unwrap();
+        println!("{}", keymap);
+    }
+
+    #[test]
+    fn parse_user_keymap_file() -> std::io::Result<()> {
+        let mut input = String::new();
+        let mut f = std::fs::File::open("./Eclipse copy.xml")?;
+        f.read_to_string(&mut input)?;
+
+        let keymap = parse_jetbrains_keymap(&input).unwrap();
+        println!("{}", keymap);
+
+        Ok(())
+    }
+}
