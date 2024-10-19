@@ -9,7 +9,7 @@ use crate::input::InputProcessor;
 pub struct ExabindApp {
     running: bool,
     sender: Sender<ExabindEvent>,
-    last_tick: std::time::Instant,
+    last_tick: Instant,
     input_processor: InputProcessor,
     effects: Vec<Effect>
 }
@@ -20,7 +20,7 @@ impl ExabindApp {
             running: true,
             input_processor: InputProcessor::new(sender.clone()),
             sender,
-            last_tick: std::time::Instant::now(),
+            last_tick: Instant::now(),
             effects: Vec::new()
         }
     }
@@ -53,9 +53,6 @@ impl ExabindApp {
     }
 
     pub fn update(&mut self, event: ExabindEvent) {
-        let now = std::time::Instant::now();
-        self.last_tick = now;
-
         self.apply_event(event);
     }
 

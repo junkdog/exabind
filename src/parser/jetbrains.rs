@@ -1,10 +1,12 @@
 use std::fmt::Display;
+use std::iter::Filter;
+use std::slice::Iter;
 use anpa::core::{parse, StrParser};
 use crossterm::event::KeyCode;
 use crate::crossterm::format_keycode;
 use crate::parser::xml::{xml_parser, XmlTag};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct KeyMap {
     version: String,
     name: String,
@@ -12,22 +14,29 @@ struct KeyMap {
     actions: Vec<Action>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Action {
     id: String,
     shortcuts: Vec<Shortcut>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Shortcut {
     keystroke: Vec<KeyCode>,
+}
+
+impl KeyMap {
+    pub fn valid_actions(&self) -> impl Iterator<Item=&Action> {
+        self.actions.iter().filter(|a| !a.shortcuts.is_empty())
+    }
 }
 
 impl Display for KeyMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let format = |action: &Action| format!("\t{}", action.to_string());
         let parent = self.parent.as_ref().map(|s| s.as_str()).unwrap_or("");
-        let actions = self.actions.iter().map(format).collect::<Vec<_>>().join("\n");
+        // let actions = self.actions.iter().map(format).collect::<Vec<_>>().join("\n");
+        let actions = self.valid_actions().map(format).collect::<Vec<_>>().join("\n");
         write!(f, "keymap name={} parent={}:\n{}", self.name, parent, actions)
     }
 }
@@ -268,7 +277,7 @@ mod tests {
     #[test]
     fn read_keymap_from_eclipse_plugin_jar() -> std::io::Result<()> {
         let mut input = String::new();
-        let mut f = std::fs::File::open("./test/keymap-eclipse.jar")?;
+        let f = std::fs::File::open("./test/keymap-eclipse.jar")?;
 
         let mut archive = ZipArchive::new(f)?;
         archive
@@ -285,7 +294,7 @@ mod tests {
     #[test]
     fn read_keymap_from_vs_plugin_jar() -> std::io::Result<()> {
         let mut input = String::new();
-        let mut f = std::fs::File::open("./test/keymap-visualStudio.jar")?;
+        let f = std::fs::File::open("./test/keymap-visualStudio.jar")?;
 
         let mut archive = ZipArchive::new(f)?;
         archive

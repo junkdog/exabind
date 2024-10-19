@@ -6,11 +6,14 @@ use ratatui::style::Style;
 use ratatui::text::{Span, Text};
 use ratatui::widgets::{Widget, WidgetRef};
 use tachyonfx::CellIterator;
+use crate::styling::Catppuccin;
 // ref: https://upload.wikimedia.org/wikipedia/commons/3/3a/Qwerty.svg
 
 // override with custom styles for key codes
 pub struct KeyboardWidget {
     keys: Vec<KeyCap>,
+    cap_style: Style,
+    border_style: Style,
 }
 
 
@@ -32,6 +35,8 @@ macro_rules! kbd_layout {
         ]
     };
 }
+
+const COLORS: Catppuccin = Catppuccin::new();
 
 impl KeyboardLayout for AnsiKeyboardTklLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect {
@@ -181,7 +186,9 @@ impl Into<KeyCap> for (KeyCode, Rect) {
 impl KeyboardWidget {
     pub fn new(keys: Vec<KeyCap>) -> Self {
         Self {
-            keys
+            keys,
+            cap_style: Style::default().fg(COLORS.base),
+            border_style: Style::default().fg(COLORS.mantle),
         }
     }
 }
@@ -193,9 +200,17 @@ impl WidgetRef for KeyboardWidget {
         buf: &mut Buffer
     ) {
         self.keys.iter()
+            .map(|key| KeyCapWidget {
+                key_cap: key.clone(),
+                cap_style: self.cap_style,
+                border_style: self.border_style,
+            })
             .for_each(|w| w.render(Rect::default(), buf));
     }
 }
+
+// const STYLE: Style = Style::new().fg(Catppuccin::new().blue);
+// const STYLE: Style = Style::new().fg(Color::from_u32(0x40ff40));
 
 #[derive(Debug, Clone)]
 pub struct KeyCap {
@@ -203,21 +218,20 @@ pub struct KeyCap {
     area: Rect,
 }
 
-impl KeyCap {
-    pub fn new(key_code: KeyCode, area: Rect) -> Self {
-        Self {
-            key_code,
-            area,
-        }
-    }
+#[derive(Debug)]
+pub struct KeyCapWidget {
+    key_cap: KeyCap,
+    cap_style: Style,
+    border_style: Style,
+}
 
+impl KeyCapWidget {
     pub fn render_border(&self, buf: &mut Buffer) {
-        let area = self.area;
+        let area = self.key_cap.area;
 
         let draw_border = |d, cell: &mut Cell| {
-            let style = cell.style().fg(Color::Cyan);
             draw_key_border(d, cell);
-            cell.set_style(style);
+            cell.set_style(self.border_style);
         };
 
         // draw key border, left
@@ -231,13 +245,13 @@ impl KeyCap {
             let cell = &mut buf[(x, area.y + 0)];
             if cell.symbol() == " " {
                 cell.set_char('─');
-                cell.set_style(cell.style().fg(Color::Cyan));
+                cell.set_style(self.border_style);
             }
 
             let cell = &mut buf[(x, area.y + KEY_H - 1)];
             if cell.symbol() == " " {
                 cell.set_char('─');
-                cell.set_style(cell.style().fg(Color::Cyan));
+                cell.set_style(self.border_style);
             }
         }
 
@@ -249,7 +263,7 @@ impl KeyCap {
     }
 
     pub fn render_keypad(&self, buf: &mut Buffer) {
-        let key_string = match self.key_code {
+        let key_string = match self.key_cap.key_code {
             KeyCode::Esc => "ESC".to_string(),
             KeyCode::F(n) => format!("F{}", n),
             KeyCode::Char(c) if c == ' ' => "␣".to_string(),
@@ -299,20 +313,29 @@ impl KeyCap {
         };
 
         Text::from(Span::from(key_string))
-            .style(Style::default().fg(Color::Cyan))
+            .style(self.cap_style)
             .alignment(alignment)
-            .render(self.area.inner(Margin::new(1, 1)), buf);
+            .render(self.key_cap.area.inner(Margin::new(1, 1)), buf);
     }
 }
 
-impl Widget for KeyCap {
+impl KeyCap {
+    pub fn new(key_code: KeyCode, area: Rect) -> Self {
+        Self {
+            key_code,
+            area,
+        }
+    }
+}
+
+impl Widget for KeyCapWidget {
     fn render(self, _area: Rect, buf: &mut Buffer) {
         self.render_border(buf);
         self.render_keypad(buf);
     }
 }
 
-impl WidgetRef for KeyCap {
+impl WidgetRef for KeyCapWidget {
     fn render_ref(&self, _area: Rect, buf: &mut Buffer) {
         self.render_border(buf);
         self.render_keypad(buf);
