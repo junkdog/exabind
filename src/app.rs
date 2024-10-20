@@ -52,11 +52,7 @@ impl ExabindApp {
         self.effects.retain(Effect::running);
     }
 
-    pub fn update(&mut self, event: ExabindEvent) {
-        self.apply_event(event);
-    }
-
-    fn apply_event(&mut self, event: ExabindEvent) {
+    pub fn apply_event(&mut self, event: ExabindEvent) {
         match event {
             ExabindEvent::Tick        => (),
             ExabindEvent::Shutdown    => self.running = false,

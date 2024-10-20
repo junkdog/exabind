@@ -3,7 +3,8 @@ use ratatui::layout::{Alignment, Layout, Rect};
 use ratatui::layout::Constraint::Percentage;
 use ratatui::prelude::Widget;
 use ratatui::style::{Color, Style};
-use ratatui::text::{Span, Text};
+use ratatui::text::{Line, Span, Text};
+use tachyonfx::HslConvertable;
 use crate::styling::Catppuccin;
 
 pub struct ColorDemoWidget;
@@ -22,12 +23,18 @@ impl Widget for ColorDemoWidget {
             let areas = Layout::horizontal([Percentage(50), Percentage(50)])
                 .split(row);
 
-            Text::from(color_name)
+            let (h, s, l) = color.to_hsl();
+            let text = Line::from(vec![
+                Span::from(color_name),
+                Span::from(format!(" ({:.0} {:.0} {:.0})", h, s, l))
+            ]);
+
+            text.clone()
                 .style(Style::default().fg(color).bg(colors.crust))
                 .alignment(Alignment::Center)
                 .render(areas[0], buf);
 
-            Text::from(color_name)
+            text
                 .style(Style::default().fg(colors.text).bg(color))
                 .alignment(Alignment::Center)
                 .render(areas[1], buf);
