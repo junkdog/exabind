@@ -21,6 +21,10 @@ pub trait KeyboardLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect;
     fn key_position(&self, key_code: KeyCode) -> Position;
     fn layout(&self) -> Vec<KeyCap>;
+    fn key_cap(&self, c: char) -> KeyCap {
+        let key_code = KeyCode::Char(c);
+        KeyCap::new(key_code, self.key_area(key_code))
+    }
 }
 
 #[derive(Default)]
@@ -177,6 +181,46 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
     }
 }
 
+pub fn render_border(
+    key_cap: KeyCap,
+    border_style: Style,
+    buf: &mut Buffer
+) {
+    let area = key_cap.area;
+
+    let draw_border = |d, cell: &mut Cell| {
+        draw_key_border(d, cell);
+        cell.set_style(border_style);
+    };
+
+    // draw key border, left
+    let (x, y) = (area.x, area.y);
+    draw_border('┌', &mut buf[(x, y + 0)]);
+    draw_border('│', &mut buf[(x, y + 1)]);
+    draw_border('└', &mut buf[(x, y + 2)]);
+
+    // horizontal borders
+    for x in area.x..area.x + area.width - 1 {
+        let cell = &mut buf[(x, area.y + 0)];
+        if cell.symbol() == " " {
+            cell.set_char('─');
+            cell.set_style(border_style);
+        }
+
+        let cell = &mut buf[(x, area.y + KEY_H - 1)];
+        if cell.symbol() == " " {
+            cell.set_char('─');
+            cell.set_style(border_style);
+        }
+    }
+
+    // draw key border, right
+    let (x, y) = (area.x + area.width - 1, area.y);
+    draw_border('┐', &mut buf[(x, y + 0)]);
+    draw_border('│', &mut buf[(x, y + 1)]);
+    draw_border('┘', &mut buf[(x, y + 2)]);
+}
+
 impl Into<KeyCap> for (KeyCode, Rect) {
     fn into(self) -> KeyCap {
         KeyCap::new(self.0, self.1)
@@ -209,13 +253,10 @@ impl WidgetRef for KeyboardWidget {
     }
 }
 
-// const STYLE: Style = Style::new().fg(Catppuccin::new().blue);
-// const STYLE: Style = Style::new().fg(Color::from_u32(0x40ff40));
-
 #[derive(Debug, Clone)]
 pub struct KeyCap {
     key_code: KeyCode,
-    area: Rect,
+    pub area: Rect,
 }
 
 #[derive(Debug)]
@@ -226,42 +267,6 @@ pub struct KeyCapWidget {
 }
 
 impl KeyCapWidget {
-    pub fn render_border(&self, buf: &mut Buffer) {
-        let area = self.key_cap.area;
-
-        let draw_border = |d, cell: &mut Cell| {
-            draw_key_border(d, cell);
-            cell.set_style(self.border_style);
-        };
-
-        // draw key border, left
-        let (x, y) = (area.x, area.y);
-        draw_border('┌', &mut buf[(x, y + 0)]);
-        draw_border('│', &mut buf[(x, y + 1)]);
-        draw_border('└', &mut buf[(x, y + 2)]);
-
-        // horizontal borders
-        for x in area.x..area.x + area.width - 1 {
-            let cell = &mut buf[(x, area.y + 0)];
-            if cell.symbol() == " " {
-                cell.set_char('─');
-                cell.set_style(self.border_style);
-            }
-
-            let cell = &mut buf[(x, area.y + KEY_H - 1)];
-            if cell.symbol() == " " {
-                cell.set_char('─');
-                cell.set_style(self.border_style);
-            }
-        }
-
-        // draw key border, right
-        let (x, y) = (area.x + area.width - 1, area.y);
-        draw_border('┐', &mut buf[(x, y + 0)]);
-        draw_border('│', &mut buf[(x, y + 1)]);
-        draw_border('┘', &mut buf[(x, y + 2)]);
-    }
-
     pub fn render_keypad(&self, buf: &mut Buffer) {
         let key_string = match self.key_cap.key_code {
             KeyCode::Esc => "ESC".to_string(),
@@ -330,14 +335,14 @@ impl KeyCap {
 
 impl Widget for KeyCapWidget {
     fn render(self, _area: Rect, buf: &mut Buffer) {
-        self.render_border(buf);
+        render_border(self.key_cap.clone(), self.border_style, buf);
         self.render_keypad(buf);
     }
 }
 
 impl WidgetRef for KeyCapWidget {
     fn render_ref(&self, _area: Rect, buf: &mut Buffer) {
-        self.render_border(buf);
+        render_border(self.key_cap.clone(), self.border_style, buf);
         self.render_keypad(buf);
     }
 }
@@ -354,7 +359,8 @@ fn draw_key_border(
             '╡' => cell.set_char('╬'),
             '┐' => cell.set_char('╪'),
             '╩' => cell.set_char(current),
-            n => panic!("Invalid border character: {}", n),
+            n => cell.set_char('└'),
+            // n => panic!("Invalid border character: {}", n),
         },
         '┌' => match current {
             ' ' | '─' => cell.set_char('┌'),
@@ -367,7 +373,8 @@ fn draw_key_border(
             '╨' => cell.set_char('╫'),
             '╫' => cell.set_char(current),
             '╪' => cell.set_char('╫'),
-            n => panic!("Invalid border character: {}", n),
+            n => cell.set_char('┌'),
+            // n => panic!("Invalid border character: {}", n),
         },
         '┐' => match current {
             ' ' | '─' => cell.set_char('┐'),
@@ -375,13 +382,15 @@ fn draw_key_border(
             '┘' => cell.set_char('┤'),
             '└' => cell.set_char('╪'),
             '╨' => cell.set_char('╫'),
-            n => panic!("Invalid border character: {}", n),
+            n => cell.set_char('┐'),
+            // n => panic!("Invalid border character: {}", n),
         },
         '┘' => match current {
             ' ' | '─' => cell.set_char('┘'),
             '┌' => cell.set_char('╪'),
             '└' => cell.set_char('╨'),
-            n => panic!("Invalid border character: {}", n),
+            n => cell.set_char('┘'),
+            // n => panic!("Invalid border character: {}", n),
         },
         '│' => match current {
             ' ' => cell.set_char('│'),

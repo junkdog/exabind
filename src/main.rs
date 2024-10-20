@@ -20,6 +20,7 @@ use ratatui::layout::Layout;
 use ratatui::prelude::{Color, Frame, Line, Style, Stylize, Text, Widget};
 use ratatui::widgets::{Block, Clear};
 use tachyonfx::{fx, CenteredShrink, Duration, Effect, Shader};
+use tachyonfx::widget::EffectTimeline;
 use crate::event_handler::EventHandler;
 use crate::styling::Catppuccin;
 use crate::tui::Tui;
@@ -30,12 +31,12 @@ fn main() -> io::Result<()> {
     let mut app = ExabindApp::new(events.sender());
     let mut tui = Tui::new(ratatui::init(), events);
 
-    "exabind".char_indices().enumerate().for_each(|(i, c)| {
+    "exabind".char_indices().enumerate().for_each(|(i, (_, c))| {
         let kbd = AnsiKeyboardTklLayout::default();
-        // let e = effect::key_press(Duration::from_millis(i as u32 * 150), Color::LightCyan)
-        // let e = effect::key_press(Duration::from_millis(i as u32 * 150), Color::from_u32(0xaaff55))
-        let e = effect::key_press(Duration::from_millis(i as u32 * 250), Catppuccin::new().sapphire)
-            .with_area(kbd.key_area(KeyCode::Char(c.1)));
+        let e = effect::key_press(Duration::from_millis(i as u32 * 250), kbd.key_cap(c), Catppuccin::new().sapphire);
+
+        let timeline = EffectTimeline::builder().effect(&e).build();
+        timeline.save_to_file("effect_timeline. txt", 120).unwrap();
 
         app.register_effect(e);
     });

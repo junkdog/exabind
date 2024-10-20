@@ -30,37 +30,6 @@ pub struct Catppuccin {
 }
 
 impl Catppuccin {
-    pub fn named_colors(&self) -> Vec<(&str, Color)> {
-        vec![
-            ("rosewater", self.rosewater),
-            ("flamingo", self.flamingo),
-            ("pink", self.pink),
-            ("mauve", self.mauve),
-            ("red", self.red),
-            ("maroon", self.maroon),
-            ("peach", self.peach),
-            ("yellow", self.yellow),
-            ("green", self.green),
-            ("teal", self.teal),
-            ("sky", self.sky),
-            ("sapphire", self.sapphire),
-            ("blue", self.blue),
-            ("lavender", self.lavender),
-            ("text", self.text),
-            ("subtext1", self.subtext1),
-            ("subtext0", self.subtext0),
-            ("overlay2", self.overlay2),
-            ("overlay1", self.overlay1),
-            ("overlay0", self.overlay0),
-            ("surface2", self.surface2),
-            ("surface1", self.surface1),
-            ("surface0", self.surface0),
-            ("base", self.base),
-            ("mantle", self.mantle),
-            ("crust", self.crust),
-        ]
-    }
-
     pub const fn new() -> Self {
         Self {
             rosewater: Color::from_u32(0xf5e0dc),
@@ -90,5 +59,36 @@ impl Catppuccin {
             mantle: Color::from_u32(0x181825),
             crust: Color::from_u32(0x11111b),
         }
+    }
+
+    pub fn named_colors(&self) -> Vec<(&str, Color)> {
+        vec![
+            ("rosewater", self.rosewater),
+            ("flamingo", self.flamingo),
+            ("pink", self.pink),
+            ("mauve", self.mauve),
+            ("red", self.red),
+            ("maroon", self.maroon),
+            ("peach", self.peach),
+            ("yellow", self.yellow),
+            ("green", self.green),
+            ("teal", self.teal),
+            ("sky", self.sky),
+            ("sapphire", self.sapphire),
+            ("blue", self.blue),
+            ("lavender", self.lavender),
+            ("text", self.text),
+            ("subtext1", self.subtext1),
+            ("subtext0", self.subtext0),
+            ("overlay2", self.overlay2),
+            ("overlay1", self.overlay1),
+            ("overlay0", self.overlay0),
+            ("surface2", self.surface2),
+            ("surface1", self.surface1),
+            ("surface0", self.surface0),
+            ("base", self.base),
+            ("mantle", self.mantle),
+            ("crust", self.crust),
+        ]
     }
 }
