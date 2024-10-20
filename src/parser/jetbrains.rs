@@ -1,27 +1,27 @@
-use std::fmt::Display;
-use std::iter::Filter;
-use std::slice::Iter;
-use anpa::core::{parse, StrParser};
-use crossterm::event::KeyCode;
 use crate::crossterm::format_keycode;
 use crate::parser::xml::{xml_parser, XmlTag};
+use anpa::core::{parse, StrParser};
+use crossterm::event::KeyCode;
+use std::fmt::Display;
+use std::io::Read;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
-struct KeyMap {
+pub struct KeyMap {
     version: String,
     name: String,
     parent: Option<String>,
     actions: Vec<Action>,
 }
 
-#[derive(Debug, Clone)]
-struct Action {
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub struct Action {
     id: String,
     shortcuts: Vec<Shortcut>,
 }
 
-#[derive(Debug, Clone)]
-struct Shortcut {
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub struct Shortcut {
     keystroke: Vec<KeyCode>,
 }
 
@@ -41,6 +41,12 @@ impl Display for KeyMap {
     }
 }
 
+impl Shortcut {
+    pub fn keystroke(&self) -> &[KeyCode] {
+        &self.keystroke
+    }
+}
+
 impl Display for Shortcut {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let keystroke = self.keystroke.iter()
@@ -48,6 +54,16 @@ impl Display for Shortcut {
             .collect::<Vec<_>>()
             .join(" ");
         write!(f, "{}", keystroke)
+    }
+}
+
+impl Action {
+    pub fn name(&self) -> &str {
+        &self.id
+    }
+
+    pub fn shortcuts(&self) -> &[Shortcut] {
+        &self.shortcuts
     }
 }
 
@@ -59,11 +75,11 @@ impl Display for Action {
 }
 
 mod parser {
+    use crate::parser::core::eat;
     use anpa::combinators::{many_to_vec, no_separator, not_empty};
     use anpa::core::{parse, ParserExt, StrParser};
-    use anpa::parsers::{item_while};
+    use anpa::parsers::item_while;
     use crossterm::event::KeyCode;
-    use crate::parser::core::eat;
 
     fn as_keycode(key: &str) -> KeyCode {
         use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
@@ -193,10 +209,11 @@ pub fn parse_jetbrains_keymap<'a>(input: &'a str) -> Option<KeyMap> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
-    use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
-    use zip::read::ZipArchive;
     use super::*;
+    use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
+    use std::io::Read;
+    use std::path::PathBuf;
+    use zip::read::ZipArchive;
 
     #[test]
     fn parse_keycode() {
@@ -310,13 +327,41 @@ mod tests {
 
     #[test]
     fn read_keymap_from_default() -> std::io::Result<()> {
-        let mut input = String::new();
-        let mut f = std::fs::File::open("./test/default.xml")?;
-        f.read_to_string(&mut input)?;
+        // let mut input = String::new();
+        // let mut f = std::fs::File::open()?;
+        // f.read_to_string(&mut input)?;
 
-        let keymap = parse_jetbrains_keymap(&input).unwrap();
+
+        // let keymap = parse_jetbrains_keymap(&input).unwrap();
+        let keymap = PathBuf::from("./test/default.xml")
+            .parse_jetbrains_keymap();
+
         println!("{}", keymap);
 
         Ok(())
     }
+}
+
+impl JetbrainsKeymapSource for &str {
+    fn parse_jetbrains_keymap(&self) -> KeyMap {
+        parse_jetbrains_keymap(self)
+            .expect("valid keymap")
+    }
+}
+
+impl JetbrainsKeymapSource for PathBuf {
+    fn parse_jetbrains_keymap(&self) -> KeyMap {
+        let mut input = String::new();
+        let mut f = std::fs::File::open(self)
+            .expect("file to be present");
+        f.read_to_string(&mut input)
+            .expect("parsable xml");
+
+        parse_jetbrains_keymap(&input)
+            .expect("valid keymap")
+    }
+}
+
+pub trait JetbrainsKeymapSource {
+    fn parse_jetbrains_keymap(&self) -> KeyMap;
 }

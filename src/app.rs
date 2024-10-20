@@ -5,6 +5,8 @@ use ratatui::layout::Rect;
 use tachyonfx::{Duration, Effect, Shader};
 use crate::exabind_event::ExabindEvent;
 use crate::input::InputProcessor;
+use crate::ui;
+use crate::ui_state::UiState;
 
 pub struct ExabindApp {
     running: bool,
@@ -52,11 +54,12 @@ impl ExabindApp {
         self.effects.retain(Effect::running);
     }
 
-    pub fn apply_event(&mut self, event: ExabindEvent) {
+    pub fn apply_event(&mut self, event: ExabindEvent, ui_state: &mut UiState) {
         match event {
-            ExabindEvent::Tick        => (),
-            ExabindEvent::Shutdown    => self.running = false,
-            ExabindEvent::KeyPress(_) => self.input_processor.apply(&event),
+            ExabindEvent::Tick                       => (),
+            ExabindEvent::Shutdown                   => self.running = false,
+            ExabindEvent::KeyPress(_)                => self.input_processor.apply(&event),
+            ExabindEvent::ToggleHighlightShortcuts   => ui_state.toggle_highlight_shortcuts(),
         }
     }
 }

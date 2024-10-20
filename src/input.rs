@@ -29,6 +29,7 @@ impl InputProcessor {
     fn resolve_key_pressed(event: &KeyEvent) -> Option<ExabindEvent> {
         match event.code {
             KeyCode::Char('q') => Some(ExabindEvent::Shutdown),
+            KeyCode::Char('s') => Some(ExabindEvent::ToggleHighlightShortcuts),
             _ => None,
         }
     }

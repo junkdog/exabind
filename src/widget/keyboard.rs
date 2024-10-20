@@ -236,6 +236,18 @@ impl KeyboardWidget {
             border_style: Style::default().fg(COLORS.mantle),
         }
     }
+
+    pub fn new_with_style(
+        keys: Vec<KeyCap>,
+        cap_style: Style,
+        border_style: Style
+    ) -> Self {
+        Self {
+            keys,
+            cap_style,
+            border_style,
+        }
+    }
 }
 
 impl WidgetRef for KeyboardWidget {
@@ -250,9 +262,9 @@ impl WidgetRef for KeyboardWidget {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct KeyCap {
-    key_code: KeyCode,
+    pub key_code: KeyCode,
     pub area: Rect,
 }
 

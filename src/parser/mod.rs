@@ -1,4 +1,4 @@
-mod jetbrains;
+pub mod jetbrains;
 mod xml;
 mod core;
 

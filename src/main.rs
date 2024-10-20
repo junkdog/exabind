@@ -11,17 +11,82 @@ mod crossterm;
 mod styling;
 mod ui_state;
 
+use std::collections::{HashMap, HashSet};
 use app::ExabindApp;
 
 use crate::effect::starting_up;
 use crate::event_handler::EventHandler;
 use crate::tui::Tui;
-use crate::widget::{AnsiKeyboardTklLayout, KeyboardLayout};
+use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
 use ratatui::layout::Constraint::Percentage;
 use ratatui::layout::Layout;
 use ratatui::prelude::{Frame, Stylize, Widget};
 use std::io;
+use std::path::PathBuf;
+use ::crossterm::event::KeyCode;
 use tachyonfx::{CenteredShrink, Duration, Shader};
+use crate::parser::jetbrains::{Action, JetbrainsKeymapSource};
+use crate::ui_state::UiState;
+
+fn render_goto_actions(ui_state: &mut UiState) {
+    fn resolve_key_code(key_code: &KeyCode) -> KeyCode {
+        // fixme: this is a mess - do something about it
+        // translate shifted key_codes to their unshifted counterparts
+        use KeyCode::*;
+
+        match key_code {
+            Char('"') => Char('\''),
+            Char('<') => Char(','),
+            Char('>') => Char('.'),
+            Char('?') => Char('/'),
+            Char(':') => Char(';'),
+            Char('_') => Char('-'),
+            Char('+') => Char('='),
+            Char('{') => Char('['),
+            Char('}') => Char(']'),
+            Char('|') => Char('\\'),
+            Char('!') => Char('1'),
+            Char('@') => Char('2'),
+            Char('#') => Char('3'),
+            Char('$') => Char('4'),
+            Char('%') => Char('5'),
+            Char('^') => Char('6'),
+            Char('&') => Char('7'),
+            Char('*') => Char('8'),
+            Char('(') => Char('9'),
+            Char(')') => Char('0'),
+            key_code => key_code.clone(),
+        }
+    };
+
+    let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
+        .layout()
+        .iter()
+        .map(|key_cap| (key_cap.key_code, key_cap.clone()))
+        .collect();
+
+    let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
+
+    // let goto_actions: Vec<&Action> = keymap.valid_actions()
+    let goto_keyset: HashSet<&KeyCode> = keymap.valid_actions()
+        // .filter(|a| a.name().starts_with("Goto"))
+        .filter(|a| !a.shortcuts().is_empty())
+        .flat_map(|a| a.shortcuts())
+        .flat_map(|s| s.keystroke())
+        .collect();
+
+    let goto_caps: Vec<KeyCap> = goto_keyset.into_iter()
+        .map(|key_code| {
+            if let Some(key_cap) = key_caps.get(&resolve_key_code(key_code)) {
+                key_cap.clone()
+            } else {
+                panic!("Key code not found in layout: {:?}", key_code);
+            }
+        })
+        .collect();
+
+    ui_state.update_selected_shortcuts(&goto_caps);
+}
 
 fn main() -> io::Result<()> {
     let mut events = EventHandler::new(std::time::Duration::from_millis(33));
@@ -31,11 +96,12 @@ fn main() -> io::Result<()> {
 
     ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout::default());
     ui_state.register_kbd_effect(starting_up());
+    render_goto_actions(&mut ui_state);
 
     while app.is_running() {
         let elapsed = app.update_time();
         tui.receive_events(|event| {
-            app.apply_event(event);
+            app.apply_event(event, &mut ui_state);
         });
 
         tui.draw(|f| {
