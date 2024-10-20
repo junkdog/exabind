@@ -3,6 +3,7 @@ use std::time::Instant;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use tachyonfx::{Duration, Effect, Shader};
+use crate::effect::starting_up;
 use crate::exabind_event::ExabindEvent;
 use crate::input::InputProcessor;
 use crate::ui;
@@ -55,11 +56,13 @@ impl ExabindApp {
     }
 
     pub fn apply_event(&mut self, event: ExabindEvent, ui_state: &mut UiState) {
+        use ExabindEvent::*;
         match event {
-            ExabindEvent::Tick                       => (),
-            ExabindEvent::Shutdown                   => self.running = false,
-            ExabindEvent::KeyPress(_)                => self.input_processor.apply(&event),
-            ExabindEvent::ToggleHighlightShortcuts   => ui_state.toggle_highlight_shortcuts(),
+            Tick                      => (),
+            Shutdown                  => self.running = false,
+            KeyPress(_)               => self.input_processor.apply(&event),
+            ToggleHighlightShortcuts  => ui_state.toggle_highlight_shortcuts(),
+            StartupAnimation          => ui_state.register_kbd_effect(starting_up()),
         }
     }
 }

@@ -91,7 +91,12 @@ impl UiState {
         let mut buf = self.kbd.buf_shortcuts.borrow_mut();
         let area = buf.area.clone();
 
-        let kbd = KeyboardWidget::new_with_style(shortcuts.iter().map(|s| s.clone()).collect(), cap_style, border_style);
+        let mut key_caps: Vec<KeyCap> = shortcuts.iter()
+            .map(|s| s.clone())
+            .collect();
+        key_caps.sort_by(|a, b| a.area.x.cmp(&b.area.x).then(a.area.y.cmp(&b.area.y)));
+
+        let kbd = KeyboardWidget::new_with_style(key_caps, cap_style, border_style);
         kbd.render(area, &mut buf);
     }
 
