@@ -1,12 +1,10 @@
-use std::ops::DerefMut;
+use crate::styling::Catppuccin;
+use crate::widget::{KeyboardLayout, KeyboardWidget};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Rect};
 use ratatui::style::Style;
 use ratatui::widgets::{Block, Widget};
-use tachyonfx::{fx, ref_count, BufferRenderer, Duration, Effect, RefCount, Shader};
-use tachyonfx::widget::EffectTimeline;
-use crate::styling::Catppuccin;
-use crate::widget::{KeyboardLayout, KeyboardWidget};
+use tachyonfx::{ref_count, BufferRenderer, Duration, Effect, RefCount, Shader};
 
 pub struct UiState {
     kbd: KeyboardState,

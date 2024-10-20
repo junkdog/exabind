@@ -1,10 +1,11 @@
 use crossterm::event::{KeyCode, ModifierKeyCode};
+use crossterm::event::KeyCode::{Delete, Insert};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Alignment, Margin, Offset, Rect, Size};
 use ratatui::prelude::{Color, Position};
 use ratatui::style::Style;
 use ratatui::text::{Span, Text};
-use ratatui::widgets::{Widget, WidgetRef};
+use ratatui::widgets::{Block, Widget, WidgetRef};
 use tachyonfx::CellIterator;
 use crate::styling::Catppuccin;
 // ref: https://upload.wikimedia.org/wikipedia/commons/3/3a/Qwerty.svg
@@ -244,11 +245,7 @@ impl WidgetRef for KeyboardWidget {
         buf: &mut Buffer
     ) {
         self.keys.iter()
-            .map(|key| KeyCapWidget {
-                key_cap: key.clone(),
-                cap_style: self.cap_style,
-                border_style: self.border_style,
-            })
+            .map(|key| KeyCapWidget::new(key.clone(), self.cap_style, self.border_style))
             .for_each(|w| w.render(Rect::default(), buf));
     }
 }
@@ -267,6 +264,52 @@ pub struct KeyCapWidget {
 }
 
 impl KeyCapWidget {
+    pub fn new(
+        key_cap: KeyCap,
+        cap_style: Style,
+        border_style: Style
+    ) -> Self {
+
+        let colors = Catppuccin::new();
+
+        use KeyCode::*;
+        let cap_style = match key_cap.key_code {
+            Esc
+            | Tab
+            | CapsLock
+            | Modifier(_)
+            | Menu
+            | Char(' ')
+            | Enter
+            | Backspace  => cap_style.bg(colors.mantle),
+
+            F(_n @ 5..=8) => cap_style.bg(colors.mantle),
+
+            Left
+            | Right
+            | Up
+            | Down  => cap_style.bg(colors.mantle),
+
+            Delete
+            | Insert
+            | Home
+            | End
+            | PageUp
+            | PageDown
+            | PrintScreen
+            | ScrollLock
+            | Pause => cap_style.bg(colors.mantle),
+
+            _ => cap_style,
+        };
+
+        Self {
+            key_cap,
+            cap_style,
+            border_style,
+        }
+    }
+
     pub fn render_keypad(&self, buf: &mut Buffer) {
         let key_string = match self.key_cap.key_code {
             KeyCode::Esc => "ESC".to_string(),
@@ -316,6 +359,7 @@ impl KeyCapWidget {
             1 => Alignment::Center,
             _ => Alignment::Left,
         };
+
 
         Text::from(Span::from(key_string))
             .style(self.cap_style)

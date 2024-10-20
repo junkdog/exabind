@@ -5,6 +5,7 @@ use crate::widget::{render_border, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout
 use ratatui::layout::{Margin, Position};
 use ratatui::style::{Color, Style};
 use tachyonfx::{fx, CellFilter, Duration, Effect, Interpolatable, Interpolation, RangeSampler, SimpleRng};
+use tachyonfx::fx::{prolong_end, prolong_start};
 use crate::effect;
 
 pub fn key_press<C: Into<Color>>(
@@ -53,7 +54,7 @@ pub fn starting_up() -> Effect {
         let e = key_press(Duration::from_millis(accrued_delay), kbd.key_cap(c), Catppuccin::new().sapphire);
         effects.push(e);
     });
-    accrued_delay += 200;
+    accrued_delay += 500;
     let e = key_press(Duration::from_millis(accrued_delay), KeyCap::new(KeyCode::Enter, esc_area), Catppuccin::new().sapphire);
     effects.push(e);
 
@@ -102,16 +103,28 @@ pub fn led_kbd_border() -> Effect {
     let mut color_cycle_reversed = color_cycle.iter().rev().cloned().collect::<Vec<_>>();
     color_cycle.append(&mut color_cycle_reversed);
 
-    let initial_state = (color_cycle, Instant::now());
+    let initial_state = (color_cycle, None);
     effect_fn_buf(initial_state, Duration::from_millis(1), |(colors, started_at), _ctx, buf| {
+        if started_at.is_none() {
+            *started_at = Some(Instant::now());
+        }
+
         let area = buf.area.clone();
 
         // velocity; 10 colors per second
-        let elapsed = started_at.elapsed().as_millis();
+        let elapsed = started_at.as_ref().unwrap().elapsed().as_millis().max(1).saturating_sub(500);
         let raw_color_idx = (elapsed / 100) as u32;
 
         let color = |pos: Position| -> Color {
-            let idx = (raw_color_idx + (pos.x / 2 + pos.y * 3 / 2) as u32) as usize;
+            let idx = if elapsed < 1200 {
+                let factor = 1.0 / (elapsed as f32 / 2000.0);
+                // let factor = (elapsed as f32 / 1200.0) / 1.0;
+                let raw = pos.x / 2 + pos.y * 3 / 2;
+                let idx = (raw as f32 * factor) as u32;
+                (raw_color_idx + idx) as usize
+            } else {
+                (raw_color_idx + (pos.x / 2 + pos.y * 3 / 2) as u32) as usize
+            };
             colors[idx % colors.len()]
         };
 
@@ -119,7 +132,7 @@ pub fn led_kbd_border() -> Effect {
             for x in area.left()..area.right() {
                 let cell = buf.cell_mut(Position::new(x, y)).unwrap();
                 if let Some(ch) = cell.symbol().chars().next() {
-                    if !is_box_drawing(ch) {
+                    if !is_box_drawing(ch) && ch != ' ' {
                         cell.set_fg(color(Position::new(x, y)));
                     }
                 }

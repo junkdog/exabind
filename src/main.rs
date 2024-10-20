@@ -11,22 +11,17 @@ mod crossterm;
 mod styling;
 mod ui_state;
 
-use std::env::args;
 use app::ExabindApp;
 
-use std::io;
-use ::crossterm::event::KeyCode;
-use ratatui::layout::Constraint::Percentage;
-use ratatui::layout::{Layout, Rect};
-use ratatui::prelude::{Buffer, Color, Frame, Line, Style, Stylize, Text, Widget};
-use ratatui::widgets::{Block, Clear};
-use tachyonfx::{fx, CenteredShrink, Duration, Effect, Interpolation, RefCount, Shader};
-use tachyonfx::widget::EffectTimeline;
 use crate::effect::starting_up;
 use crate::event_handler::EventHandler;
-use crate::styling::Catppuccin;
 use crate::tui::Tui;
-use crate::widget::{AnsiKeyboardTklLayout, ColorDemoWidget, KeyCap, KeyboardLayout, KeyboardWidget};
+use crate::widget::{AnsiKeyboardTklLayout, KeyboardLayout};
+use ratatui::layout::Constraint::Percentage;
+use ratatui::layout::Layout;
+use ratatui::prelude::{Frame, Stylize, Widget};
+use std::io;
+use tachyonfx::{CenteredShrink, Duration, Shader};
 
 fn main() -> io::Result<()> {
     let mut events = EventHandler::new(std::time::Duration::from_millis(33));
@@ -68,9 +63,11 @@ fn ui(f: &mut Frame<'_>, ui_state: &mut ui_state::UiState) {
         return;
     }
 
+    // Clear.render(f.area(), f.buffer_mut());
+
     ui_state.render_kbd(f.buffer_mut());
 
     let demo_area = Layout::horizontal([Percentage(50), Percentage(50)])
         .split(f.area())[1];
-    ColorDemoWidget::new().render(demo_area, f.buffer_mut());
+    // ColorDemoWidget::new().render(demo_area, f.buffer_mut());
 }
