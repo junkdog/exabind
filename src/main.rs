@@ -10,23 +10,25 @@ mod parser;
 mod crossterm;
 mod styling;
 mod ui_state;
+mod shortcut;
+mod buffer;
 
-use std::collections::{HashMap, HashSet};
 use app::ExabindApp;
+use std::collections::{HashMap, HashSet};
 
 use crate::effect::starting_up;
 use crate::event_handler::EventHandler;
+use crate::parser::jetbrains::JetbrainsKeymapSource;
 use crate::tui::Tui;
+use crate::ui_state::UiState;
 use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
+use ::crossterm::event::KeyCode;
 use ratatui::layout::Constraint::Percentage;
 use ratatui::layout::Layout;
 use ratatui::prelude::{Frame, Stylize, Widget};
 use std::io;
 use std::path::PathBuf;
-use ::crossterm::event::KeyCode;
 use tachyonfx::{CenteredShrink, Duration, Shader};
-use crate::parser::jetbrains::{Action, JetbrainsKeymapSource};
-use crate::ui_state::UiState;
 
 fn render_goto_actions(ui_state: &mut UiState) {
     fn resolve_key_code(key_code: &KeyCode) -> KeyCode {
@@ -129,11 +131,9 @@ fn ui(f: &mut Frame<'_>, ui_state: &mut ui_state::UiState) {
         return;
     }
 
-    // Clear.render(f.area(), f.buffer_mut());
-
     ui_state.render_kbd(f.buffer_mut());
 
     let demo_area = Layout::horizontal([Percentage(50), Percentage(50)])
         .split(f.area())[1];
-    // ColorDemoWidget::new().render(demo_area, f.buffer_mut());
+    // widget::ColorDemoWidget::new().render(demo_area, f.buffer_mut());
 }

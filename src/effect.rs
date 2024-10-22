@@ -68,12 +68,9 @@ pub fn starting_up() -> Effect {
 
 pub fn fade_in_keys() -> Effect {
     use tachyonfx::{CellFilter::*, fx::*};
-    let key_borders = CellFilter::Outer(Margin::new(1, 1));
-    let key_pad = CellFilter::Inner(Margin::new(0, 0));
 
     let color_cap = Catppuccin::new().surface0;
     let color_border = Catppuccin::new().mauve;
-    let bg = Catppuccin::new().crust;
 
     parallel(&[
         prolong_start(700, never_complete(fade_to_fg(color_cap, (1500, Interpolation::SineIn))))
@@ -117,8 +114,7 @@ pub fn led_kbd_border() -> Effect {
 
         let color = |pos: Position| -> Color {
             let idx = if elapsed < 1200 {
-                let factor = 1.0 / (elapsed as f32 / 2000.0);
-                // let factor = (elapsed as f32 / 1200.0) / 1.0;
+                let factor = 1.0 / (elapsed as f32 / 1200.0);
                 let raw = pos.x / 2 + pos.y * 3 / 2;
                 let idx = (raw as f32 * factor) as u32;
                 (raw_color_idx + idx) as usize

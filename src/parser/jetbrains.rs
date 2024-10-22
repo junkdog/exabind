@@ -5,6 +5,7 @@ use crossterm::event::KeyCode;
 use std::fmt::Display;
 use std::io::Read;
 use std::path::PathBuf;
+use crate::shortcut::{Action, Shortcut};
 
 #[derive(Debug, Clone)]
 pub struct KeyMap {
@@ -14,20 +15,11 @@ pub struct KeyMap {
     actions: Vec<Action>,
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct Action {
-    id: String,
-    shortcuts: Vec<Shortcut>,
-}
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct Shortcut {
-    keystroke: Vec<KeyCode>,
-}
 
 impl KeyMap {
     pub fn valid_actions(&self) -> impl Iterator<Item=&Action> {
-        self.actions.iter().filter(|a| !a.shortcuts.is_empty())
+        self.actions.iter().filter(|a| a.is_bound())
     }
 }
 
@@ -41,38 +33,6 @@ impl Display for KeyMap {
     }
 }
 
-impl Shortcut {
-    pub fn keystroke(&self) -> &[KeyCode] {
-        &self.keystroke
-    }
-}
-
-impl Display for Shortcut {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let keystroke = self.keystroke.iter()
-            .map(|k| format_keycode(*k))
-            .collect::<Vec<_>>()
-            .join(" ");
-        write!(f, "{}", keystroke)
-    }
-}
-
-impl Action {
-    pub fn name(&self) -> &str {
-        &self.id
-    }
-
-    pub fn shortcuts(&self) -> &[Shortcut] {
-        &self.shortcuts
-    }
-}
-
-impl Display for Action {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let shortcuts = self.shortcuts.iter().map(Shortcut::to_string).collect::<Vec<_>>().join(", ");
-        write!(f, "{}: {}", self.id, shortcuts)
-    }
-}
 
 mod parser {
     use crate::parser::core::eat;
@@ -172,7 +132,7 @@ fn as_shortcut(keyboard_shortcut_node: &XmlTag<'_>) -> Shortcut {
         .map(|s| parser::parse_keycodes(&s))
         .unwrap_or_default();
 
-    Shortcut { keystroke }
+    Shortcut::new(keystroke)
 }
 
 fn as_action(action_node: &XmlTag<'_>) -> Action {
@@ -185,7 +145,7 @@ fn as_action(action_node: &XmlTag<'_>) -> Action {
         .map(as_shortcut)
         .collect();
 
-    Action { id, shortcuts }
+    Action::new(id, shortcuts)
 }
 
 fn as_keymap(xml: XmlTag<'_>) -> KeyMap {
@@ -201,7 +161,7 @@ fn as_keymap(xml: XmlTag<'_>) -> KeyMap {
     }
 }
 
-pub fn parse_jetbrains_keymap<'a>(input: &'a str) -> Option<KeyMap> {
+pub fn parse_jetbrains_keymap(input: &str) -> Option<KeyMap> {
     let res = parse(xml_parser(), input);
     debug_assert!(res.state.is_empty(), "Unparsed: '{}'", res.state);
     res.result.map(as_keymap)
@@ -327,11 +287,6 @@ mod tests {
 
     #[test]
     fn read_keymap_from_default() -> std::io::Result<()> {
-        // let mut input = String::new();
-        // let mut f = std::fs::File::open()?;
-        // f.read_to_string(&mut input)?;
-
-
         // let keymap = parse_jetbrains_keymap(&input).unwrap();
         let keymap = PathBuf::from("./test/default.xml")
             .parse_jetbrains_keymap();

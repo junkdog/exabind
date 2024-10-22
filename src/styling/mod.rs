@@ -1,3 +1,3 @@
-mod Catpuccin;
+mod catpuccin;
 
-pub use Catpuccin::Catppuccin;
+pub use catpuccin::Catppuccin;

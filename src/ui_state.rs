@@ -1,12 +1,11 @@
-use crossterm::event::KeyCode;
 use crate::styling::Catppuccin;
 use crate::widget::{KeyCap, KeyboardLayout, KeyboardWidget};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Rect};
-use ratatui::style::Style;
-use ratatui::widgets::{Block, Widget};
-use tachyonfx::{ref_count, BufferRenderer, Duration, Effect, RefCount, Shader};
-use crate::parser::jetbrains::Action;
+use ratatui::style::{Style, Stylize};
+use ratatui::widgets::{Block, Clear, Widget};
+use tachyonfx::{ref_count, BufferRenderer, CellIterator, Duration, Effect, RefCount, Shader};
+use crate::buffer::blit_buffer;
 
 pub struct UiState {
     kbd: KeyboardState,
@@ -75,8 +74,9 @@ impl UiState {
             .render_buffer(Offset::default(), &mut buf);
 
         if self.kbd.buf_shortcuts_visible {
-            self.kbd.buf_shortcuts.borrow()
-                .render_buffer(Offset::default(), &mut buf);
+            blit_buffer(&self.kbd.buf_shortcuts.borrow(), &mut buf, Offset::default());
+            // self.kbd.buf_shortcuts.borrow()
+            //     .render_buffer(Offset::default(), &mut buf);
         }
     }
 
@@ -86,18 +86,32 @@ impl UiState {
     ) {
         let colors = Catppuccin::new();
         let cap_style = Style::default().fg(colors.base);
-        let border_style = Style::default().fg(colors.sapphire);
+        let border_style = Style::default().fg(colors.lavender);
 
         let mut buf = self.kbd.buf_shortcuts.borrow_mut();
         let area = buf.area.clone();
+        Clear.render(area, &mut buf);
+        let default_style = buf.cell((area.x, area.y)).unwrap().style().clone();
 
         let mut key_caps: Vec<KeyCap> = shortcuts.iter()
             .map(|s| s.clone())
             .collect();
-        key_caps.sort_by(|a, b| a.area.x.cmp(&b.area.x).then(a.area.y.cmp(&b.area.y)));
+
+
+        fn keycap_sort_value(key_cap: &KeyCap) -> u32 {
+            let a = key_cap.area;
+            a.x as u32 + (a.y as u32 * a.width as u32)
+        }
+
+        key_caps.sort_by(|a, b| keycap_sort_value(a).cmp(&keycap_sort_value(b)));
 
         let kbd = KeyboardWidget::new_with_style(key_caps, cap_style, border_style);
         kbd.render(area, &mut buf);
+
+        // mark all cells with default style as skip
+        CellIterator::new(&mut buf, area,  None)
+            .filter(|(_, c)| c.symbol() == " " && c.style() == default_style)
+            .for_each(|(pos, c)| c.skip = true);
     }
 
     pub fn toggle_highlight_shortcuts(&mut self) {

@@ -230,11 +230,11 @@ impl Into<KeyCap> for (KeyCode, Rect) {
 
 impl KeyboardWidget {
     pub fn new(keys: Vec<KeyCap>) -> Self {
-        Self {
+        Self::new_with_style(
             keys,
-            cap_style: Style::default().fg(COLORS.base),
-            border_style: Style::default().fg(COLORS.mantle),
-        }
+            Style::default().fg(COLORS.mantle).bg(COLORS.crust),
+            Style::default().fg(COLORS.mantle)
+        )
     }
 
     pub fn new_with_style(
@@ -285,6 +285,7 @@ impl KeyCapWidget {
         let colors = Catppuccin::new();
 
         use KeyCode::*;
+        let other_color = colors.mantle;
         let cap_style = match key_cap.key_code {
             Esc
             | Tab
@@ -293,14 +294,14 @@ impl KeyCapWidget {
             | Menu
             | Char(' ')
             | Enter
-            | Backspace  => cap_style.bg(colors.mantle),
+            | Backspace  => cap_style.bg(other_color),
 
-            F(_n @ 5..=8) => cap_style.bg(colors.mantle),
+            F(_n @ 5..=8) => cap_style.bg(other_color),
 
             Left
             | Right
             | Up
-            | Down  => cap_style.bg(colors.mantle),
+            | Down  => cap_style.bg(other_color),
 
             Delete
             | Insert
@@ -310,7 +311,7 @@ impl KeyCapWidget {
             | PageDown
             | PrintScreen
             | ScrollLock
-            | Pause => cap_style.bg(colors.mantle),
+            | Pause => cap_style.bg(other_color),
 
             _ => cap_style,
         };
@@ -454,7 +455,7 @@ fn draw_key_border(
             // n => panic!("Invalid border character: {}", n),
             _ => cell.set_char('|'),
         },
-        _ => panic!("Invalid border character"),
+        c => panic!("Invalid border character: {}", c),
     };
 }
 
