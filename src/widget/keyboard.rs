@@ -190,42 +190,44 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
 }
 
 pub fn render_border_with<F>(
-    key_cap: KeyCap,
+    key_caps: &[KeyCap],
     buf: &mut Buffer,
-    draw_border_fn: F
+    mut draw_border_fn: F
 ) where
-    F: Fn(char, Position, &mut Cell)
+    F: FnMut(char, Position, &mut Cell)
 {
-    let area = key_cap.area;
+    for key_cap in key_caps {
+        let area = key_cap.area;
 
-    let mut draw_border = |decorate: char, x, y| {
-        draw_border_fn(decorate, (x, y).into(), &mut buf[(x, y)]);
-    };
+        let mut draw_border = |decorate: char, x, y| {
+            draw_border_fn(decorate, (x, y).into(), &mut buf[(x, y)]);
+        };
 
-    // draw key border, left
-    let (x, y) = (area.x, area.y);
-    draw_border('┌', x, y + 0);
-    draw_border('│', x, y + 1);
-    draw_border('└', x, y + 2);
+        // draw key border, left
+        let (x, y) = (area.x, area.y);
+        draw_border('┌', x, y + 0);
+        draw_border('│', x, y + 1);
+        draw_border('└', x, y + 2);
 
-    // draw key border, right
-    let (x, y) = (area.x + area.width - 1, area.y);
-    draw_border('┐', x, y + 0);
-    draw_border('│', x, y + 1);
-    draw_border('┘', x, y + 2);
+        // draw key border, right
+        let (x, y) = (area.x + area.width - 1, area.y);
+        draw_border('┐', x, y + 0);
+        draw_border('│', x, y + 1);
+        draw_border('┘', x, y + 2);
 
-    let mut draw_horizontal_border = |x, y| {
-        let pos = (x, y).into();
-        let cell = &mut buf[pos];
-        if cell.symbol() == " " {
-            draw_border_fn('─', pos, cell);
+        let mut draw_horizontal_border = |x, y| {
+            let pos = (x, y).into();
+            let cell = &mut buf[pos];
+            if " ─".contains(cell.symbol()) {
+                draw_border_fn('─', pos, cell);
+            }
+        };
+
+        // draw top and bottom borders
+        for x in area.x..area.x + area.width - 1 {
+            draw_horizontal_border(x, area.y + 0);
+            draw_horizontal_border(x, area.y + KEY_H - 1);
         }
-    };
-
-    // draw top and bottom borders
-    for x in area.x..area.x + area.width - 1 {
-        draw_horizontal_border(x, area.y + 0);
-        draw_horizontal_border(x, area.y + KEY_H - 1);
     }
 }
 
@@ -234,7 +236,7 @@ pub fn render_border(
     border_style: Style,
     buf: &mut Buffer,
 ) {
-    render_border_with(key_cap, buf, |d, _pos, cell| {
+    render_border_with(&[key_cap], buf, |d, _pos, cell| {
         draw_key_border(d, cell);
         cell.set_style(border_style);
     });
@@ -422,7 +424,7 @@ impl WidgetRef for KeyCapWidget {
     }
 }
 
-fn draw_key_border(
+pub fn draw_key_border(
     decorate: char,
     cell: &mut Cell,
 ) {

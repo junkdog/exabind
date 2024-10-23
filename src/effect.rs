@@ -1,8 +1,9 @@
 use std::time::Instant;
+use bit_set::BitSet;
 use crossterm::event::KeyCode;
 use crate::styling::Catppuccin;
-use crate::widget::{render_border, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
-use ratatui::layout::{Margin, Position};
+use crate::widget::{draw_key_border, render_border, render_border_with, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
+use ratatui::layout::{Margin, Position, Rect};
 use ratatui::style::{Color, Style};
 use tachyonfx::{fx, CellFilter, Duration, Effect, Interpolatable, Interpolation, RangeSampler, SimpleRng};
 use tachyonfx::fx::{prolong_end, prolong_start};
@@ -136,12 +137,54 @@ pub fn led_kbd_border() -> Effect {
 
 }
 
+pub fn outline_border(key_caps: &[KeyCap], border_style: Style) -> Effect {
+    use tachyonfx::fx::*;
+
+    let key_caps = key_caps.iter().map(|k| k.clone()).collect::<Vec<_>>();
+    effect_fn_buf((), Duration::from_millis(1), move |_state, ctx, buf| {
+        let key_caps = key_caps.clone();
+
+        let area = buf.area.clone();
+        area.positions().for_each(|pos| {
+            buf.cell_mut(pos).map(|c| c.skip = true);
+        });
+
+        let area_width = buf.area.right() as usize;
+        let cell_bits = buf.area.bottom() as usize * area_width;
+        let mut border_cells = BitSet::with_capacity(cell_bits);
+        render_border_with(&key_caps, buf, move |d, pos, cell| {
+            draw_key_border(d, cell);
+            cell.set_style(border_style);
+
+            let pos_bit = index_of_pos(area, pos);
+            if border_cells.contains(pos_bit) {
+                border_cells.remove(pos_bit);
+                cell.skip = true;
+            } else {
+                border_cells.insert(pos_bit);
+                cell.skip = false;
+            }
+        });
+
+        area.positions().for_each(|pos| {
+            let mut cell = &mut buf[pos];
+            if "╨╫╥".contains(cell.symbol()) {
+                cell.skip = false;
+                cell.set_char('─');
+            }
+        });
+    })
+}
+
 fn draw_single_border(key_cap: KeyCap, duration: Duration) -> Effect {
     use tachyonfx::fx::*;
     let border_style = Style::default().fg(Catppuccin::new().base);
 
     effect_fn_buf((), duration, move |_state, ctx, buf| {
-        render_border(key_cap.clone(), border_style, buf)
+        render_border_with(&[key_cap.clone()], buf, move |d, pos, cell| {
+            draw_key_border(d, cell);
+            cell.set_style(border_style);
+        });
     })
 }
 
@@ -156,4 +199,11 @@ fn clear_cells(duration: Duration) -> Effect {
 
 fn is_box_drawing(c: char) -> bool {
     ('\u{2500}'..='\u{257F}').contains(&c)
+}
+
+const fn index_of_pos(area: Rect, position: Position) -> usize {
+    let y = (position.y - area.y) as usize;
+    let x = (position.x - area.x) as usize;
+    let width = area.width as usize;
+    y * width + x
 }

@@ -6,6 +6,7 @@ use ratatui::style::{Style, Stylize};
 use ratatui::widgets::{Block, Clear, Widget};
 use tachyonfx::{ref_count, BufferRenderer, CellIterator, Duration, Effect, RefCount, Shader};
 use crate::buffer::blit_buffer;
+use crate::effect::outline_border;
 
 pub struct UiState {
     kbd: KeyboardState,
@@ -106,13 +107,15 @@ impl UiState {
 
         key_caps.sort_by(|a, b| keycap_sort_value(a).cmp(&keycap_sort_value(b)));
 
-        let kbd = KeyboardWidget::new_with_style(key_caps, cap_style, border_style);
-        kbd.render(area, &mut buf);
+        // let kbd = KeyboardWidget::new_with_style(key_caps, cap_style, border_style);
+        // kbd.render(area, &mut buf);
+        outline_border(&key_caps, border_style)
+            .process(Duration::from_millis(17), &mut buf, area);
 
         // mark all cells with default style as skip
-        CellIterator::new(&mut buf, area,  None)
-            .filter(|(_, c)| c.symbol() == " " && c.style() == default_style)
-            .for_each(|(pos, c)| c.skip = true);
+        // CellIterator::new(&mut buf, area,  None)
+        //     .filter(|(_, c)| c.symbol() == " " && c.style() == default_style)
+        //     .for_each(|(pos, c)| c.skip = true);
     }
 
     pub fn toggle_highlight_shortcuts(&mut self) {
