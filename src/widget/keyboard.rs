@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crossterm::event::{KeyCode, ModifierKeyCode};
 use crossterm::event::KeyCode::{Delete, Insert};
 use ratatui::buffer::{Buffer, Cell};
@@ -6,7 +7,6 @@ use ratatui::prelude::{Color, Position};
 use ratatui::style::Style;
 use ratatui::text::{Span, Text};
 use ratatui::widgets::{Block, Widget, WidgetRef};
-use tachyonfx::CellIterator;
 use crate::styling::Catppuccin;
 // ref: https://upload.wikimedia.org/wikipedia/commons/3/3a/Qwerty.svg
 
@@ -25,6 +25,13 @@ pub trait KeyboardLayout {
     fn key_cap(&self, c: char) -> KeyCap {
         let key_code = KeyCode::Char(c);
         KeyCap::new(key_code, self.key_area(key_code))
+    }
+
+    fn key_cap_lookup(&self) -> HashMap<KeyCode, KeyCap> {
+        self.layout()
+            .iter()
+            .map(|key_cap| (key_cap.key_code, key_cap.clone()))
+            .collect()
     }
 }
 
@@ -182,44 +189,55 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
     }
 }
 
-pub fn render_border(
+pub fn render_border_with<F>(
     key_cap: KeyCap,
-    border_style: Style,
-    buf: &mut Buffer
-) {
+    buf: &mut Buffer,
+    draw_border_fn: F
+) where
+    F: Fn(char, Position, &mut Cell)
+{
     let area = key_cap.area;
 
-    let draw_border = |d, cell: &mut Cell| {
-        draw_key_border(d, cell);
-        cell.set_style(border_style);
+    let mut draw_border = |decorate: char, x, y| {
+        draw_border_fn(decorate, (x, y).into(), &mut buf[(x, y)]);
     };
 
     // draw key border, left
     let (x, y) = (area.x, area.y);
-    draw_border('┌', &mut buf[(x, y + 0)]);
-    draw_border('│', &mut buf[(x, y + 1)]);
-    draw_border('└', &mut buf[(x, y + 2)]);
-
-    // horizontal borders
-    for x in area.x..area.x + area.width - 1 {
-        let cell = &mut buf[(x, area.y + 0)];
-        if cell.symbol() == " " {
-            cell.set_char('─');
-            cell.set_style(border_style);
-        }
-
-        let cell = &mut buf[(x, area.y + KEY_H - 1)];
-        if cell.symbol() == " " {
-            cell.set_char('─');
-            cell.set_style(border_style);
-        }
-    }
+    draw_border('┌', x, y + 0);
+    draw_border('│', x, y + 1);
+    draw_border('└', x, y + 2);
 
     // draw key border, right
     let (x, y) = (area.x + area.width - 1, area.y);
-    draw_border('┐', &mut buf[(x, y + 0)]);
-    draw_border('│', &mut buf[(x, y + 1)]);
-    draw_border('┘', &mut buf[(x, y + 2)]);
+    draw_border('┐', x, y + 0);
+    draw_border('│', x, y + 1);
+    draw_border('┘', x, y + 2);
+
+    let mut draw_horizontal_border = |x, y| {
+        let pos = (x, y).into();
+        let cell = &mut buf[pos];
+        if cell.symbol() == " " {
+            draw_border_fn('─', pos, cell);
+        }
+    };
+
+    // draw top and bottom borders
+    for x in area.x..area.x + area.width - 1 {
+        draw_horizontal_border(x, area.y + 0);
+        draw_horizontal_border(x, area.y + KEY_H - 1);
+    }
+}
+
+pub fn render_border(
+    key_cap: KeyCap,
+    border_style: Style,
+    buf: &mut Buffer,
+) {
+    render_border_with(key_cap, buf, |d, _pos, cell| {
+        draw_key_border(d, cell);
+        cell.set_style(border_style);
+    });
 }
 
 impl Into<KeyCap> for (KeyCode, Rect) {
@@ -416,6 +434,7 @@ fn draw_key_border(
             '╡' => cell.set_char('╬'),
             '┐' => cell.set_char('╪'),
             '╩' => cell.set_char(current),
+            '┌' => cell.set_char('├'),
             n => cell.set_char('└'),
             // n => panic!("Invalid border character: {}", n),
         },
@@ -434,7 +453,8 @@ fn draw_key_border(
             // n => panic!("Invalid border character: {}", n),
         },
         '┐' => match current {
-            ' ' | '─' => cell.set_char('┐'),
+            ' ' => cell.set_char('┐'),
+            '─' => cell.set_char('┬'),
             '┌' => cell.set_char('╥'),
             '┘' => cell.set_char('┤'),
             '└' => cell.set_char('╪'),
@@ -454,6 +474,10 @@ fn draw_key_border(
             '│' => cell.set_char('║'),
             // n => panic!("Invalid border character: {}", n),
             _ => cell.set_char('|'),
+        },
+        '─' => match current {
+            ' ' | '─' => cell.set_char('─'),
+            _         => cell.set_char('#'), // should never happen
         },
         c => panic!("Invalid border character: {}", c),
     };

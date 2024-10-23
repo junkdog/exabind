@@ -124,16 +124,14 @@ pub fn led_kbd_border() -> Effect {
             colors[idx % colors.len()]
         };
 
-        for y in area.top()..area.bottom() {
-            for x in area.left()..area.right() {
-                let cell = buf.cell_mut(Position::new(x, y)).unwrap();
-                if let Some(ch) = cell.symbol().chars().next() {
-                    if !is_box_drawing(ch) && ch != ' ' {
-                        cell.set_fg(color(Position::new(x, y)));
-                    }
+        area.positions().for_each(|pos| {
+            let cell = buf.cell_mut(pos).unwrap();
+            if let Some(ch) = cell.symbol().chars().next() {
+                if !is_box_drawing(ch) && ch != ' ' {
+                    cell.set_fg(color(pos));
                 }
             }
-        }
+        });
     }).with_cell_selection(Outer(Margin::new(1, 1)))
 
 }

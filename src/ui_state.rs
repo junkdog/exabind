@@ -100,7 +100,8 @@ impl UiState {
 
         fn keycap_sort_value(key_cap: &KeyCap) -> u32 {
             let a = key_cap.area;
-            a.x as u32 + (a.y as u32 * a.width as u32)
+            a.left() as u32 + (a.top() as u32 * a.width as u32)
+            // a.x as u32 + (a.y as u32 * a.width as u32)
         }
 
         key_caps.sort_by(|a, b| keycap_sort_value(a).cmp(&keycap_sort_value(b)));

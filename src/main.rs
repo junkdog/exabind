@@ -62,10 +62,7 @@ fn render_goto_actions(ui_state: &mut UiState) {
     };
 
     let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
-        .layout()
-        .iter()
-        .map(|key_cap| (key_cap.key_code, key_cap.clone()))
-        .collect();
+        .key_cap_lookup();
 
     let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
 
