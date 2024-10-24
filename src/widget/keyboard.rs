@@ -218,13 +218,13 @@ pub fn render_border_with<F>(
         let mut draw_horizontal_border = |x, y| {
             let pos = (x, y).into();
             let cell = &mut buf[pos];
-            if " ─".contains(cell.symbol()) {
+            // if " ─".contains(cell.symbol()) {
                 draw_border_fn('─', pos, cell);
-            }
+            // }
         };
 
         // draw top and bottom borders
-        for x in area.x..area.x + area.width - 1 {
+        for x in area.x + 1..area.x + area.width - 1 {
             draw_horizontal_border(x, area.y + 0);
             draw_horizontal_border(x, area.y + KEY_H - 1);
         }
@@ -431,27 +431,29 @@ pub fn draw_key_border(
     let current = cell.symbol().chars().next().unwrap();
     match decorate {
         '└' => match current {
-            ' ' | '─' => cell.set_char('└'),
+            ' ' => cell.set_char('└'),
+            '─' => cell.set_char('X'),
             '┘' => cell.set_char('╨'),
             '╡' => cell.set_char('╬'),
             '┐' => cell.set_char('╪'),
             '╩' => cell.set_char(current),
             '┌' => cell.set_char('├'),
-            n => cell.set_char('└'),
+            n => cell.set_char('Y'),
             // n => panic!("Invalid border character: {}", n),
         },
         '┌' => match current {
-            ' ' | '─' => cell.set_char('┌'),
+            ' ' => cell.set_char('┌'),
+            '─' => cell.set_char('┬'),
             '┘' => cell.set_char('╪'),
             '╡' => cell.set_char('╫'),
             '┤' => cell.set_char('╫'),
+            '┬' => cell.set_char('╥'),
             '┐' => cell.set_char('╥'),
-            '│' => cell.set_char(current),
             '└' => cell.set_char('├'),
             '╨' => cell.set_char('╫'),
             '╫' => cell.set_char(current),
             '╪' => cell.set_char('╫'),
-            n => cell.set_char('┌'),
+            n => cell.set_char(n),
             // n => panic!("Invalid border character: {}", n),
         },
         '┐' => match current {
@@ -465,20 +467,21 @@ pub fn draw_key_border(
             // n => panic!("Invalid border character: {}", n),
         },
         '┘' => match current {
-            ' ' | '─' => cell.set_char('┘'),
+            ' ' => cell.set_char('┘'),
             '┌' => cell.set_char('╪'),
             '└' => cell.set_char('╨'),
-            n => cell.set_char('┘'),
+            n => cell.set_char('X'),
             // n => panic!("Invalid border character: {}", n),
         },
         '│' => match current {
             ' ' => cell.set_char('│'),
             '│' => cell.set_char('║'),
-            // n => panic!("Invalid border character: {}", n),
             _ => cell.set_char('|'),
         },
         '─' => match current {
             ' ' | '─' => cell.set_char('─'),
+            '┘' | '└' => cell.set_char('┴'),
+            '╨' | '╥' => cell.set_char(current),
             _         => cell.set_char('#'), // should never happen
         },
         c => panic!("Invalid border character: {}", c),

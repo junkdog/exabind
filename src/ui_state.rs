@@ -1,5 +1,5 @@
 use crate::styling::Catppuccin;
-use crate::widget::{KeyCap, KeyboardLayout, KeyboardWidget};
+use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, KeyboardWidget};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Rect};
 use ratatui::style::{Style, Stylize};
@@ -105,12 +105,17 @@ impl UiState {
             // a.x as u32 + (a.y as u32 * a.width as u32)
         }
 
-        key_caps.sort_by(|a, b| keycap_sort_value(a).cmp(&keycap_sort_value(b)));
+        // key_caps.sort_by(|a, b| keycap_sort_value(a).cmp(&keycap_sort_value(b)));
 
         // let kbd = KeyboardWidget::new_with_style(key_caps, cap_style, border_style);
         // kbd.render(area, &mut buf);
-        outline_border(&key_caps, border_style)
+        let mut sorted_kbd_layout = AnsiKeyboardTklLayout::default().layout();
+        sorted_kbd_layout.retain(|k| key_caps.iter().any(|s| s.key_code == k.key_code));
+
+        // outline_border(&key_caps, border_style)
+        outline_border(&sorted_kbd_layout, border_style)
             .process(Duration::from_millis(17), &mut buf, area);
+
 
         // mark all cells with default style as skip
         // CellIterator::new(&mut buf, area,  None)

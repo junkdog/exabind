@@ -149,28 +149,115 @@ pub fn outline_border(key_caps: &[KeyCap], border_style: Style) -> Effect {
             buf.cell_mut(pos).map(|c| c.skip = true);
         });
 
-        let area_width = buf.area.right() as usize;
-        let cell_bits = buf.area.bottom() as usize * area_width;
-        let mut border_cells = BitSet::with_capacity(cell_bits);
+        let area_width = buf.area.right() as isize;
+        let cell_bits = buf.area.bottom() as isize * area_width;
+        let mut key_cap_cells = BitSet::with_capacity(cell_bits as usize);
         render_border_with(&key_caps, buf, move |d, pos, cell| {
             draw_key_border(d, cell);
             cell.set_style(border_style);
-
-            let pos_bit = index_of_pos(area, pos);
-            if border_cells.contains(pos_bit) {
-                border_cells.remove(pos_bit);
-                cell.skip = true;
-            } else {
-                border_cells.insert(pos_bit);
-                cell.skip = false;
-            }
+            cell.skip = false;
+            // let pos_bit = index_of_pos(area, pos);
+            // if key_cap_cells.contains(pos_bit) {
+            //     key_cap_cells.remove(pos_bit);
+            //     cell.skip = true;
+            // } else {
+            //     key_cap_cells.insert(pos_bit);
+            //     cell.skip = false;
+            // }
         });
+
+        key_caps.iter()
+            .map(|k| k.area)
+            .flat_map(|a| a.positions())
+            .for_each(|pos| {
+                let idx = index_of_pos(area, pos);
+                key_cap_cells.insert(idx);
+                // buf.cell_mut(pos).map(|c| c.skip = false);
+            });
+
+        let neighbors = |pos| -> [bool; 4] {
+            let mut neighbors = [false; 4];
+            // let x = idx % area_width;
+            // let y = idx / area_width;
+            let idx = index_of_pos(area, pos) as isize;
+
+
+
+            let is_set = |idx: isize| -> bool {
+                idx >= 0 && key_cap_cells.contains(idx as usize)
+            };
+
+            if pos.x > 0 && pos.x > area.left() {
+                neighbors[0] = is_set(idx - area_width - 1);
+                neighbors[2] = is_set(idx + area_width - 1);
+            }
+            if pos.x < (area.right() - 1) as _ {
+                neighbors[1] = is_set(idx - area_width + 1);
+                neighbors[3] = is_set(idx + area_width + 1);
+            }
+
+            neighbors
+        };
 
         area.positions().for_each(|pos| {
             let mut cell = &mut buf[pos];
-            if "╨╫╥".contains(cell.symbol()) {
-                cell.skip = false;
-                cell.set_char('─');
+
+            match (cell.symbol(), neighbors(pos)) {
+                ("╨", [true, true, sw, se]) => {
+                    cell.skip = false;
+                    // fkey and number rows have adjacent borders, so we need to
+                    // make sure to not clear the border between them...
+                    if sw && se && !(2..=3).contains(&pos.y) {
+                        cell.set_char(' ');
+                    } else {
+                        cell.set_char('─');
+                    }
+                },
+                (ch, [true, true, true, true]) if ch != "│" => {
+                    if !(2..=3).contains(&pos.y) {
+                        cell.skip = true;
+                        cell.set_char('X');
+                    }
+                },
+                ("┬", [true, true, true, false]) => {
+                    cell.skip = false;
+                    cell.set_char('┌');
+                },
+                ("┬", [true, true, false, true]) => {
+                    cell.skip = false;
+                    cell.set_char('┐');
+                },
+                ("┴", [true, false, true, true]) => {
+                    cell.skip = false;
+                    cell.set_char('└');
+                },
+                ("┴", [false, true, true, true]) => {
+                    cell.skip = false;
+                    cell.set_char('┘');
+                },
+                ("╥", [_nw, _ne, true, true]) => {
+                    cell.skip = false;
+                    cell.set_char('─');
+                },
+                ("┤", [true, false, true, false]) => {
+                    cell.skip = false;
+                    cell.set_char('│');
+                },
+                ("├", [false, true, false, true]) => {
+                    cell.skip = false;
+                    cell.set_char('│');
+                },
+                ("╫", [true, false, true, true])  => {
+                    cell.skip = false;
+                    cell.set_char('└');
+                },
+                ("╫", [false, true, true, true]) => {
+                    cell.skip = false;
+                    cell.set_char('┘');
+                },
+                _ => {
+                    // cell.skip = false;
+                }
             }
         });
     })
