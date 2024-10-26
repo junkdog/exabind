@@ -39,11 +39,17 @@ fn categorize_action(action: &Action) -> &'static str {
         n if n.contains("Bookmark")                => "bookmarks",
         n if n.starts_with("Goto")                 => "navigate",
         n if n.starts_with("JumpTo")               => "navigate",
-        "Back" | "PreviousTab" | "NextTab"         => "navigate",
+        "Back"
+        | "MethodDown"
+        | "MethodUp"
+        | "FocusEditor"
+        | "PreviousTab"
+        | "NextTab"                                => "navigate",
         n if n.contains("Hierarchy")               => "hierarchy",
         n if n.starts_with("Introduce")            => "refactor",
         n if n.starts_with("Refactorings.")        => "refactor",
         "ChangeSignature"
+        | "Generate"
         | "Inline"
         | "ImplementMethods"
         | "ExtractMethod"
@@ -59,7 +65,7 @@ fn categorize_action(action: &Action) -> &'static str {
         "ShowIntentionActions"                     => "edit",
         n if n.starts_with("Find")                 => "find",
         n if n.starts_with("Replace")              => "find",
-        n if n.starts_with("SearchEverywhere.")    => "find",
+        n if n.contains("Search")                  => "find",
         "NextOccurence"
         | "IncrementalSearch"
         | "ShowUsages"
@@ -75,7 +81,7 @@ fn categorize_action(action: &Action) -> &'static str {
         n if n.starts_with("Close")                => "close",
         n if n.starts_with("Collapse")             => "tree actions",
         n if n.starts_with("Expand")               => "tree actions",
-        n if n.starts_with("Breakpoint")           => "breakpoints",
+        n if n.contains("Breakpoint")              => "breakpoints",
         n if n.starts_with("Debugger.")            => "debug/run",
         n if n.starts_with("XDebugger.")           => "debug/run",
         n if n.starts_with("Step")                 => "debug/run",
@@ -108,10 +114,16 @@ fn categorize_action(action: &Action) -> &'static str {
         n if n.starts_with("Terminal.")            => "terminal",
         n if n.starts_with("Diff.")                => "diff",
         "NextDiff" | "PreviousDiff"                => "diff",
-        "OpenFile"                                 => "file",
+        "OpenFile"
+        | "RecentFiles"
+        | "RecentChangedFiles"                     => "file",
         n if n.starts_with("FileChooser.")         => "file chooser",
-        n if n.starts_with("Vcs.")                 => "vcs",
+        n if n.starts_with("Vcs")                  => "vcs",
         n if n.starts_with("Git.")                 => "vcs",
+        n if n.starts_with("Jdbc.")                => "database",
+        n if n.starts_with("Sql.")                 => "database",
+        n if n.contains("JavaDoc")                 => "documentation",
+        n if n.contains("Project")                 => "project",
 
         _                                          => "other",
     }
