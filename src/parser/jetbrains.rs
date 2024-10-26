@@ -1,11 +1,10 @@
-use crate::crossterm::format_keycode;
 use crate::parser::xml::{xml_parser, XmlTag};
+use crate::shortcut::{Action, Shortcut};
 use anpa::core::{parse, StrParser};
-use crossterm::event::KeyCode;
 use std::fmt::Display;
 use std::io::Read;
 use std::path::PathBuf;
-use crate::shortcut::{Action, Shortcut};
+use itertools::Itertools;
 
 #[derive(Debug, Clone)]
 pub struct KeyMap {
@@ -18,14 +17,16 @@ pub struct KeyMap {
 
 
 impl KeyMap {
-    pub fn valid_actions(&self) -> impl Iterator<Item=&Action> {
-        self.actions.iter().filter(|a| a.is_bound())
+    pub fn valid_actions(&self) -> impl Iterator<Item=(&'static str, &Action)> {
+        self.actions.iter()
+            .filter(|a| a.is_bound())
+            .map(|a| (categorize_action(a), a))
     }
 }
 
 impl Display for KeyMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let format = |action: &Action| format!("\t{}", action.to_string());
+        let format = |(category, action): (_, &Action)| format!("\t{} ({})", action.to_string(), category);
         let parent = self.parent.as_ref().map(|s| s.as_str()).unwrap_or("");
         // let actions = self.actions.iter().map(format).collect::<Vec<_>>().join("\n");
         let actions = self.valid_actions().map(format).collect::<Vec<_>>().join("\n");
@@ -33,6 +34,88 @@ impl Display for KeyMap {
     }
 }
 
+fn categorize_action(action: &Action) -> &'static str {
+    match action.name() {
+        n if n.contains("Bookmark")                => "bookmarks",
+        n if n.starts_with("Goto")                 => "navigate",
+        n if n.starts_with("JumpTo")               => "navigate",
+        "Back" | "PreviousTab" | "NextTab"         => "navigate",
+        n if n.contains("Hierarchy")               => "hierarchy",
+        n if n.starts_with("Introduce")            => "refactor",
+        n if n.starts_with("Refactorings.")        => "refactor",
+        "ChangeSignature"
+        | "Inline"
+        | "ImplementMethods"
+        | "ExtractMethod"
+        | "Move"
+        | "RenameElement"                          => "refactor",
+        n if n.contains("EditorTab")               => "editor tab",
+        n if n.contains("Split")                   => "editor tab",
+        "MoveEditorToOppositeTabGroup"             => "editor tab",
+        n if n.starts_with("Editor")               => "editor",
+        n if n.starts_with("Edit")                 => "edit",
+        n if n.starts_with("CommentBy")            => "edit",
+        n if n.starts_with("$")                    => "edit",
+        "ShowIntentionActions"                     => "edit",
+        n if n.starts_with("Find")                 => "find",
+        n if n.starts_with("Replace")              => "find",
+        n if n.starts_with("SearchEverywhere.")    => "find",
+        "NextOccurence"
+        | "IncrementalSearch"
+        | "ShowUsages"
+        | "HighlightUsagesInFile"
+        | "PreviousOccurence"                      => "find",
+        n if n.starts_with("Activate")             => "tool window",
+        n if n.contains("ToolWindow")              => "tool window",
+        "HideActiveWindow"
+        | "AutoIndentLines"
+        | "HideAllWindows"                         => "tool window",
+        n if n.starts_with("Build")                => "build",
+        n if n.starts_with("Compile")              => "build",
+        n if n.starts_with("Close")                => "close",
+        n if n.starts_with("Collapse")             => "tree actions",
+        n if n.starts_with("Expand")               => "tree actions",
+        n if n.starts_with("Breakpoint")           => "breakpoints",
+        n if n.starts_with("Debugger.")            => "debug/run",
+        n if n.starts_with("XDebugger.")           => "debug/run",
+        n if n.starts_with("Step")                 => "debug/run",
+        n if n.starts_with("ForceStep")            => "debug/run",
+        "RunToCursor"                              => "debug/run",
+        n if n.starts_with("Run")                  => "debug/run",
+        n if n.starts_with("Rerun")                  => "debug/run",
+        "Stop"
+        | "Pause"
+        | "Debug"
+        | "Resume"
+        | "SmartStepInto"
+        | "ChooseDebugConfiguration"
+        | "ChooseRunConfiguration"
+        | "XDebugger.AttachToProcess"
+        | "EvaluateExpression"                     => "debug/run",
+        "ParameterInfo"
+        | "ToggleInlineHintsAction"
+        | "ToggleInlayHintsGloballyAction"
+        | "ExpressionTypeInfo"
+        | "EditorContextInfo"
+        | "ShowErrorDescription"                   => "code introspection",
+
+        n if n.starts_with("MoveElement")          => "code formatting",
+        n if n.starts_with("MoveLine")             => "code formatting",
+        n if n.starts_with("MoveStatement")        => "code formatting",
+        "ReformatCode"
+        | "OptimizeImports"                        => "code formatting",
+        n if n.contains("Completion")              => "code completion",
+        n if n.starts_with("Terminal.")            => "terminal",
+        n if n.starts_with("Diff.")                => "diff",
+        "NextDiff" | "PreviousDiff"                => "diff",
+        "OpenFile"                                 => "file",
+        n if n.starts_with("FileChooser.")         => "file chooser",
+        n if n.starts_with("Vcs.")                 => "vcs",
+        n if n.starts_with("Git.")                 => "vcs",
+
+        _                                          => "other",
+    }
+}
 
 mod parser {
     use crate::parser::core::eat;
@@ -169,6 +252,7 @@ pub fn parse_jetbrains_keymap(input: &str) -> Option<KeyMap> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{HashMap, HashSet};
     use super::*;
     use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
     use std::io::Read;
@@ -246,9 +330,44 @@ mod tests {
         f.read_to_string(&mut input)?;
 
         let keymap = parse_jetbrains_keymap(&input).unwrap();
-        println!("{}", keymap);
+        // println!("{}", keymap);
+        print_sorted_actions(keymap, true);
 
         Ok(())
+    }
+
+    fn print_sorted_actions(
+        keymap: KeyMap,
+        also_sort_by_category: bool,
+    ) {
+        let mut actions = keymap.valid_actions()
+            .collect::<Vec<_>>();
+
+        if also_sort_by_category {
+            actions.sort_by(|(c1, a1), (c2, a2)| c1.cmp(c2).then(a1.name().cmp(a2.name())));
+        } else {
+            actions.sort_by(|(_, a1), (_, a2)| a1.name().cmp(a2.name()));
+        }
+
+        // count actions per category
+        let category_counts:HashMap<&str, usize> = actions.iter()
+            .map(|(category, _)| category)
+            .fold(HashMap::new(), |mut acc, category| {
+                let count = acc.entry(category).or_insert(0);
+                *count += 1;
+                acc
+            });
+
+        println!("Actions per category:");
+        category_counts.iter().for_each(|(category, count)| {
+            println!("\t{}: {}", category, count);
+        });
+        println!();
+
+        print!("Actions by category, name:");
+        actions.iter().for_each(|(category, action)| {
+            println!("\t{} ({})", action.to_string(), category);
+        });
     }
 
     #[test]
@@ -263,7 +382,8 @@ mod tests {
             .expect("parsable xml");
 
         let keymap = parse_jetbrains_keymap(&input).unwrap();
-        println!("{}", keymap);
+        print_sorted_actions(keymap, true);
+        // println!("{}", keymap);
 
         Ok(())
     }
@@ -280,7 +400,7 @@ mod tests {
             .expect("parsable xml");
 
         let keymap = parse_jetbrains_keymap(&input).unwrap();
-        println!("{}", keymap);
+        print_sorted_actions(keymap, true);
 
         Ok(())
     }
@@ -291,7 +411,17 @@ mod tests {
         let keymap = PathBuf::from("./test/default.xml")
             .parse_jetbrains_keymap();
 
-        println!("{}", keymap);
+        // println!("{}", keymap);
+
+        print_sorted_actions(keymap, true);
+        // let mut actions = keymap.valid_actions()
+        //     .collect::<Vec<_>>();
+        //
+        // actions.sort_by(|a, b| a.1.name().cmp(b.1.name()));
+        //
+        // actions.iter().for_each(|(category, action)| {
+        //     println!("\t{} ({})", action.to_string(), category);
+        // });
 
         Ok(())
     }

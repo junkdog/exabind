@@ -156,14 +156,6 @@ pub fn outline_border(key_caps: &[KeyCap], border_style: Style) -> Effect {
             draw_key_border(d, cell);
             cell.set_style(border_style);
             cell.skip = false;
-            // let pos_bit = index_of_pos(area, pos);
-            // if key_cap_cells.contains(pos_bit) {
-            //     key_cap_cells.remove(pos_bit);
-            //     cell.skip = true;
-            // } else {
-            //     key_cap_cells.insert(pos_bit);
-            //     cell.skip = false;
-            // }
         });
 
         key_caps.iter()
@@ -172,16 +164,11 @@ pub fn outline_border(key_caps: &[KeyCap], border_style: Style) -> Effect {
             .for_each(|pos| {
                 let idx = index_of_pos(area, pos);
                 key_cap_cells.insert(idx);
-                // buf.cell_mut(pos).map(|c| c.skip = false);
             });
 
         let neighbors = |pos| -> [bool; 4] {
             let mut neighbors = [false; 4];
-            // let x = idx % area_width;
-            // let y = idx / area_width;
             let idx = index_of_pos(area, pos) as isize;
-
-
 
             let is_set = |idx: isize| -> bool {
                 idx >= 0 && key_cap_cells.contains(idx as usize)
@@ -203,21 +190,24 @@ pub fn outline_border(key_caps: &[KeyCap], border_style: Style) -> Effect {
             let mut cell = &mut buf[pos];
 
             match (cell.symbol(), neighbors(pos)) {
-                ("╨", [true, true, sw, se]) => {
-                    cell.skip = false;
+                (ch, [true, true, true, true]) if !"│ ".contains(ch) => {
                     // fkey and number rows have adjacent borders, so we need to
                     // make sure to not clear the border between them...
-                    if sw && se && !(2..=3).contains(&pos.y) {
-                        cell.set_char(' ');
-                    } else {
+                    if (2..=3).contains(&pos.y) {
+                        cell.skip = false;
                         cell.set_char('─');
-                    }
-                },
-                (ch, [true, true, true, true]) if ch != "│" => {
-                    if !(2..=3).contains(&pos.y) {
+                    } else {
                         cell.skip = true;
                         cell.set_char('X');
                     }
+                },
+                ("╨", [true, true, _, _]) => {
+                    cell.skip = false;
+                    cell.set_char('─');
+                },
+                ("╥", [_, _, true, true]) => {
+                    cell.skip = false;
+                    cell.set_char('─');
                 },
                 ("┬", [true, true, true, false]) => {
                     cell.skip = false;
@@ -234,10 +224,6 @@ pub fn outline_border(key_caps: &[KeyCap], border_style: Style) -> Effect {
                 ("┴", [false, true, true, true]) => {
                     cell.skip = false;
                     cell.set_char('┘');
-                },
-                ("╥", [_nw, _ne, true, true]) => {
-                    cell.skip = false;
-                    cell.set_char('─');
                 },
                 ("┤", [true, false, true, false]) => {
                     cell.skip = false;

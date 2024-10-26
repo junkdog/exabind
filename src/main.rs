@@ -21,7 +21,7 @@ use crate::event_handler::EventHandler;
 use crate::parser::jetbrains::JetbrainsKeymapSource;
 use crate::tui::Tui;
 use crate::ui_state::UiState;
-use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
+use crate::widget::{resolve_key_code, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
 use ::crossterm::event::KeyCode;
 use ratatui::layout::Constraint::Percentage;
 use ratatui::layout::Layout;
@@ -31,52 +31,23 @@ use std::path::PathBuf;
 use tachyonfx::{CenteredShrink, Duration, Shader};
 
 fn render_goto_actions(ui_state: &mut UiState) {
-    fn resolve_key_code(key_code: &KeyCode) -> KeyCode {
-        // fixme: this is a mess - do something about it
-        // translate shifted key_codes to their unshifted counterparts
-        use KeyCode::*;
-
-        match key_code {
-            Char('"') => Char('\''),
-            Char('<') => Char(','),
-            Char('>') => Char('.'),
-            Char('?') => Char('/'),
-            Char(':') => Char(';'),
-            Char('_') => Char('-'),
-            Char('+') => Char('='),
-            Char('{') => Char('['),
-            Char('}') => Char(']'),
-            Char('|') => Char('\\'),
-            Char('!') => Char('1'),
-            Char('@') => Char('2'),
-            Char('#') => Char('3'),
-            Char('$') => Char('4'),
-            Char('%') => Char('5'),
-            Char('^') => Char('6'),
-            Char('&') => Char('7'),
-            Char('*') => Char('8'),
-            Char('(') => Char('9'),
-            Char(')') => Char('0'),
-            key_code => key_code.clone(),
-        }
-    };
-
     let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
         .key_cap_lookup();
 
     let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
+    let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
 
     // let goto_actions: Vec<&Action> = keymap.valid_actions()
     let goto_keyset: HashSet<&KeyCode> = keymap.valid_actions()
         // .filter(|a| a.name().starts_with("Goto"))
-        .filter(|a| !a.shortcuts().is_empty())
-        .flat_map(|a| a.shortcuts())
+        .filter(|(_, a)| !a.shortcuts().is_empty())
+        .flat_map(|(_, a)| a.shortcuts())
         .flat_map(|s| s.keystroke())
         .collect();
 
     let goto_caps: Vec<KeyCap> = goto_keyset.into_iter()
         .map(|key_code| {
-            if let Some(key_cap) = key_caps.get(&resolve_key_code(key_code)) {
+            if let Some(key_cap) = key_caps.get(&resolve_key_code(key_code.clone())) {
                 key_cap.clone()
             } else {
                 panic!("Key code not found in layout: {:?}", key_code);

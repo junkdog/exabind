@@ -398,6 +398,7 @@ dependencies = [
  "anpa",
  "bit-set",
  "crossterm",
+ "itertools",
  "ratatui",
  "tachyonfx",
  "zip",

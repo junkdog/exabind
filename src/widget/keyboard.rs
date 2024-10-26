@@ -52,7 +52,7 @@ const COLORS: Catppuccin = Catppuccin::new();
 
 impl KeyboardLayout for AnsiKeyboardTklLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect {
-        let size = match key_code {
+        let size = match resolve_key_code(key_code) {
             KeyCode::Char(' ') => Size::new(SPACE_W, KEY_H),
             KeyCode::Char('\\') => Size::new(9, KEY_H),
             KeyCode::Tab => Size::new(TAB_W, KEY_H),
@@ -107,7 +107,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             Char(c) if MIDDLE_ROW.contains(c) => (CAPSLOCK_W - 1 + offset(MIDDLE_ROW, c), 7),
             Char(c) if BOTTOM_ROW.contains(c) => (SHIFT_L_W - 1 + offset(BOTTOM_ROW, c), 9),
             Char(' ')                         => (CTRL_L_W + SUPER_W + ALT_W - 3, 11),
-            Char(_)                           => (0, 0),
+            Char(_)                           =>  panic!("Invalid key code: {:?}", key_code),
             Modifier(LeftShift)    => (0, 9),
             Modifier(RightShift)   => (SHIFT_L_W - 1 + key_offset(BOTTOM_ROW.len() as u16), 9),
             Modifier(LeftControl)  => (0, 11),
@@ -486,6 +486,37 @@ pub fn draw_key_border(
         },
         c => panic!("Invalid border character: {}", c),
     };
+}
+
+// fixme: this is a mess - do something about it + what about localization
+// translate shifted key_codes to their unshifted counterparts
+pub fn resolve_key_code(key_code: KeyCode) -> KeyCode {
+    use KeyCode::*;
+
+    match key_code {
+        Char('"') => Char('\''),
+        Char('<') => Char(','),
+        Char('>') => Char('.'),
+        Char('?') => Char('/'),
+        Char(':') => Char(';'),
+        Char('_') => Char('-'),
+        Char('+') => Char('='),
+        Char('{') => Char('['),
+        Char('}') => Char(']'),
+        Char('|') => Char('\\'),
+        Char('!') => Char('1'),
+        Char('@') => Char('2'),
+        Char('#') => Char('3'),
+        Char('$') => Char('4'),
+        Char('%') => Char('5'),
+        Char('^') => Char('6'),
+        Char('&') => Char('7'),
+        Char('*') => Char('8'),
+        Char('(') => Char('9'),
+        Char(')') => Char('0'),
+
+        key_code => key_code,
+    }
 }
 
 const NAV_KEY_X_START: u16 = 79;
