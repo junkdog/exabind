@@ -1,5 +1,5 @@
 use std::sync::mpsc::Sender;
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, ModifierKeyCode};
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
 
@@ -27,11 +27,18 @@ impl InputProcessor {
     }
 
     fn resolve_key_pressed(event: &KeyEvent) -> Option<ExabindEvent> {
+        use KeyCode::*;
         match event.code {
-            KeyCode::Char('q') => Some(ExabindEvent::Shutdown),
-            KeyCode::Char('h') => Some(ExabindEvent::ToggleHighlightShortcuts),
-            KeyCode::Char('s') => Some(ExabindEvent::StartupAnimation),
-            _ => None,
+            Char('q')     => Some(ExabindEvent::Shutdown),
+            Char('h')     => Some(ExabindEvent::ToggleHighlightShortcuts),
+            Char('s')     => Some(ExabindEvent::StartupAnimation),
+            Up            => Some(ExabindEvent::PreviousCategory),
+            Down          => Some(ExabindEvent::NextCategory),
+            // Modifier(mfc) => Some(ExabindEvent::ToggleFilterKey(mfc)),
+            Char('1')     => Some(ExabindEvent::ToggleFilterKey(ModifierKeyCode::LeftControl)),
+            Char('2')     => Some(ExabindEvent::ToggleFilterKey(ModifierKeyCode::LeftAlt)),
+            Char('3')     => Some(ExabindEvent::ToggleFilterKey(ModifierKeyCode::LeftShift)),
+            _             => None,
         }
     }
 }

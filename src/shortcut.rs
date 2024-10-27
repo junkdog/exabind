@@ -60,6 +60,16 @@ impl Shortcut {
     pub fn contains(&self, key: KeyCode) -> bool {
         self.keystroke.contains(&key)
     }
+
+    pub fn uses_modifier(&self, key: ModifierKeyCode) -> bool {
+        self.keystroke.iter().any(|kc| {
+            if let KeyCode::Modifier(m) = kc {
+                m == &key
+            } else {
+                false
+            }
+        })
+    }
 }
 
 impl Action {

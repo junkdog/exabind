@@ -1,16 +1,20 @@
+use std::collections::{HashMap, HashSet};
+use crossterm::event::{KeyCode, ModifierKeyCode};
+use crossterm::event::ModifierKeyCode::{LeftAlt, LeftControl, LeftShift};
 use crate::styling::Catppuccin;
-use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, KeyboardWidget};
+use crate::widget::{resolve_key_code, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, KeyboardWidget};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Rect, Size};
 use ratatui::style::{Style, Stylize};
 use ratatui::widgets::{Block, Clear, ListState, Widget};
 use tachyonfx::{ref_count, BufferRenderer, CellIterator, Duration, Effect, RefCount, Shader};
+use crate::app::KeyMapContext;
 use crate::buffer::blit_buffer;
 use crate::effect::outline_border;
+use crate::parser::jetbrains::KeyMap;
 
 pub struct UiState {
     kbd: KeyboardState,
-    pub shortcut_categories: ListState,
 }
 
 struct KeyboardState {
@@ -32,7 +36,6 @@ impl UiState {
                 buf_shortcuts_visible: false,
                 effects: Vec::new(),
             },
-            shortcut_categories: ListState::default(),
         }
     }
 
@@ -87,7 +90,41 @@ impl UiState {
         }
     }
 
-    pub fn update_selected_shortcuts(
+    pub fn render_selected_actions(
+        &mut self,
+        category: &str,
+        context: &KeyMapContext,
+    ) {
+        let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
+            .key_cap_lookup();
+
+        let filter_shortcuts_on_selected_modifiers = context.filter_key_alt;
+
+        let keymap = &context.keymap;
+        let goto_keyset: HashSet<&KeyCode> = keymap.valid_actions()
+            .filter(|(cat, _)| *cat == category)
+            .filter(|(_, a)| !a.shortcuts().is_empty())
+            .flat_map(|(_, a)| a.shortcuts())
+            .filter(|shortcuts| !context.filter_key_control || shortcuts.uses_modifier(LeftControl))
+            .filter(|shortcuts| !context.filter_key_shift   || shortcuts.uses_modifier(LeftShift))
+            .filter(|shortcuts| !context.filter_key_alt     || shortcuts.uses_modifier(LeftAlt))
+            .flat_map(|s| s.keystroke())
+            .collect();
+
+        let keys_to_outline: Vec<KeyCap> = goto_keyset.into_iter()
+            .map(|key_code| {
+                if let Some(key_cap) = key_caps.get(&resolve_key_code(key_code.clone())) {
+                    key_cap.clone()
+                } else {
+                    panic!("Key code not found in layout: {:?}", key_code);
+                }
+            })
+            .collect();
+
+        self.update_selected_shortcuts_outline(&keys_to_outline);
+    }
+
+    fn update_selected_shortcuts_outline(
         &mut self,
         shortcuts: &[KeyCap]
     ) {

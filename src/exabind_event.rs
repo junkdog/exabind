@@ -1,3 +1,4 @@
+use crossterm::event::ModifierKeyCode;
 use ratatui::crossterm::event::KeyEvent;
 
 #[derive(Debug, Clone)]
@@ -8,5 +9,8 @@ pub enum ExabindEvent {
     KeyPress(KeyEvent),
     ToggleHighlightShortcuts,
     StartupAnimation,
+    NextCategory,
+    PreviousCategory,
+    ToggleFilterKey(ModifierKeyCode),
 }
 

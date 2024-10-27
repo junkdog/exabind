@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::parser::xml::{xml_parser, XmlTag};
 use crate::shortcut::{Action, Shortcut};
 use anpa::core::{parse, StrParser};
@@ -23,16 +24,20 @@ impl KeyMap {
             .map(|a| (categorize_action(a), a))
     }
 
-    pub fn categories(&self) -> Vec<String> {
-        let mut categories: Vec<_> = self.actions.iter()
+    pub fn categories(&self) -> Vec<(String, usize)> {
+        let mut categories: HashMap<String, usize> = HashMap::new();
+        self.actions.iter()
+            .filter(|a| a.is_bound())
             .map(categorize_action)
-            .unique()
-            .map(|s| s.to_string())
-            .collect();
+            .for_each(|category| {
+                let count = categories.entry(category.to_string()).or_insert(0);
+                *count += 1;
+            });
 
-        categories.sort_by(|a, b| a.cmp(b));
+        let mut cats: Vec<_> = categories.into_iter().collect();
+        cats.sort_by(|(c1, _), (c2, _)| c1.cmp(c2));
+        cats
 
-        categories
     }
 }
 

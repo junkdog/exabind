@@ -61,7 +61,10 @@ impl EventHandler {
             CrosstermEvent::Key(e) if e.kind == KeyEventKind::Press =>
                 sender.send(ExabindEvent::KeyPress(e)),
 
-            _ => Ok(()),
+            e => {
+                println!("{:?}", e);
+                Ok(())
+            },
         }.expect("event should have been sent");
     }
 }

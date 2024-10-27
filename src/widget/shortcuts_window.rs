@@ -2,12 +2,12 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Margin, Rect, Size};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Span, Text};
-use ratatui::widgets::{Block, Clear, List, ListItem, Row, StatefulWidgetRef, Table, TableState, Widget, WidgetRef};
+use ratatui::widgets::{Block, Clear, List, ListItem, Row, StatefulWidgetRef, Table, TableState, Widget};
 use tachyonfx::HslConvertable;
 use crate::shortcut::{Action, Shortcut};
 
 pub struct ShortcutsWindow {
-    title: &'static str,
+    title: String,
     shortcuts: Vec<Action>,
     size: Size,
     row_style: Style,
@@ -20,7 +20,7 @@ pub struct ShortcutsWindow {
 
 impl ShortcutsWindow {
     pub fn new(
-        title: &'static str,
+        title: String,
         keystroke_style: Style,
         action_name_style: Style,
         base_color: Color,
@@ -102,7 +102,7 @@ impl StatefulWidgetRef for ShortcutsWindow {
 
     fn render_ref(&self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let translated_area: Rect = (area.as_position(), self.size).into();
-        let translated_area = translated_area.intersection(area);
+        let translated_area = translated_area.intersection(buf.area().clone());
 
         let constraints = [
             Constraint::Length(self.max_shortcut_keystroke_width),
@@ -117,9 +117,11 @@ impl StatefulWidgetRef for ShortcutsWindow {
 
         let content_area = translated_area.inner(Margin::new(1, 1));
 
-        Table::new(self.rows(), constraints)
+        let table = Table::new(self.rows(), constraints)
             .column_spacing(1)
-            .row_highlight_style(self.selected_row_style)
-            .render(content_area, buf);
+            .row_highlight_style(self.selected_row_style);
+            // .render(content_area, buf);
+
+        StatefulWidgetRef::render_ref(&table, content_area, buf, state);
     }
 }

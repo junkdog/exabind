@@ -29,47 +29,45 @@ use ratatui::prelude::{Frame, Stylize, StatefulWidget};
 use std::io;
 use std::path::PathBuf;
 use ratatui::style::{Color, Style};
-use ratatui::widgets::{StatefulWidgetRef, TableState};
+use ratatui::widgets::{ListState, StatefulWidgetRef, TableState};
 use tachyonfx::{CenteredShrink, Duration, Shader};
+use crate::app::KeyMapContext;
 
-fn render_goto_actions(keymap: &KeyMap, ui_state: &mut UiState) {
-    let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
-        .key_cap_lookup();
-
-    // let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
-    // let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
-
-    // let goto_actions: Vec<&Action> = keymap.valid_actions()
-    let goto_keyset: HashSet<&KeyCode> = keymap.valid_actions()
-        .filter(|(cat, _)| *cat == "navigate")
-        .filter(|(_, a)| !a.shortcuts().is_empty())
-        .flat_map(|(_, a)| a.shortcuts())
-        .flat_map(|s| s.keystroke())
-        .collect();
-
-    let goto_caps: Vec<KeyCap> = goto_keyset.into_iter()
-        .map(|key_code| {
-            if let Some(key_cap) = key_caps.get(&resolve_key_code(key_code.clone())) {
-                key_cap.clone()
-            } else {
-                panic!("Key code not found in layout: {:?}", key_code);
-            }
-        })
-        .collect();
-
-    ui_state.update_selected_shortcuts(&goto_caps);
-}
+// fn render_goto_actions(keymap: &KeyMap, ui_state: &mut UiState) {
+//     let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
+//         .key_cap_lookup();
+//
+//     let goto_keyset: HashSet<&KeyCode> = keymap.valid_actions()
+//         .filter(|(cat, _)| *cat == "navigate")
+//         .filter(|(_, a)| !a.shortcuts().is_empty())
+//         .flat_map(|(_, a)| a.shortcuts())
+//         .flat_map(|s| s.keystroke())
+//         .collect();
+//
+//     let goto_caps: Vec<KeyCap> = goto_keyset.into_iter()
+//         .map(|key_code| {
+//             if let Some(key_cap) = key_caps.get(&resolve_key_code(key_code.clone())) {
+//                 key_cap.clone()
+//             } else {
+//                 panic!("Key code not found in layout: {:?}", key_code);
+//             }
+//         })
+//         .collect();
+//
+//     ui_state.update_selected_shortcuts(&goto_caps);
+// }
 
 fn main() -> io::Result<()> {
     let mut events = EventHandler::new(std::time::Duration::from_millis(33));
     let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
+    // let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
     let mut app = ExabindApp::new(events.sender(), keymap);
     let mut ui_state = ui_state::UiState::new();
     let mut tui = Tui::new(ratatui::init(), events);
 
     ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout::default());
     ui_state.register_kbd_effect(starting_up());
-    render_goto_actions(app.keymap(), &mut ui_state);
+    ui_state.render_selected_actions(app.keymap_context().category(), app.keymap_context());
 
     while app.is_running() {
         let elapsed = app.update_time();
@@ -79,7 +77,7 @@ fn main() -> io::Result<()> {
 
         tui.draw(|f| {
             ui_state.apply_kbd_effects(elapsed);
-            ui(f, app.keymap(), &mut ui_state);
+            ui(f, app.keymap_context(), &mut ui_state);
             effects(elapsed, &mut app, f);
         })?;
     }
@@ -99,10 +97,10 @@ fn effects(
 
 fn ui(
     f: &mut Frame<'_>,
-    keymap: &KeyMap,
+    keymap_context: &KeyMapContext,
     ui_state: &mut ui_state::UiState
 ) {
-    if f.area().is_empty() {
+    if f.area().is_empty() || f.area().width == 2500 || f.area().height < 3 {
         return;
     }
 
@@ -119,17 +117,20 @@ fn ui(
         Constraint::Length(1),
         Constraint::Percentage(100),
     ]).split(f.area())[2];
-    let categories = keymap.categories();
-    ShortcutCategoriesWidget::new(categories)
-        .render(category_area, f.buffer_mut(), &mut ui_state.shortcut_categories);
+    let mut list_state = ListState::default().with_selected(Some(keymap_context.current_category));
+    ShortcutCategoriesWidget::new(keymap_context.categories.clone())
+        .render(category_area, f.buffer_mut(), &mut list_state);
+
+    let keymap = &keymap_context.keymap;
 
     // render shortcuts
+    let selected_category = keymap_context.categories[keymap_context.current_category].clone();
     let actions = keymap.valid_actions()
-        .filter(|(cat, _a)| cat.eq(&"navigate"))
+        .filter(|(cat, _a)| *cat == &(selected_category.0))
         .map(|(_cat, a)| a.clone())
         .collect();
 
-    ShortcutsWindow::new("navigate",
+    ShortcutsWindow::new(selected_category.0,
         Style::default(),
         Style::default(),
         Color::Green,
