@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, ModifierKeyCode};
 use crate::crossterm::format_keycode;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -19,9 +19,46 @@ impl Shortcut {
     }
 
     pub fn new(keystroke: Vec<KeyCode>) -> Self {
+        let (modifiers, keystroke): (Vec<KeyCode>, Vec<KeyCode>) = keystroke.into_iter()
+            .partition(|k| matches!(k, KeyCode::Modifier(_)));
+
+        let as_modifier = |k: KeyCode| {
+            match k {
+                KeyCode::Modifier(m) => Some(m),
+                _                    => None
+            }
+        };
+
+        let modifiers: Vec<_> = modifiers.into_iter()
+            .filter_map(as_modifier)
+            .collect();
+
+        let modifier_key_codes = [
+            ModifierKeyCode::IsoLevel3Shift,
+            ModifierKeyCode::IsoLevel5Shift,
+            ModifierKeyCode::LeftHyper,
+            ModifierKeyCode::RightHyper,
+            ModifierKeyCode::LeftSuper,
+            ModifierKeyCode::RightSuper,
+            ModifierKeyCode::LeftControl,
+            ModifierKeyCode::RightControl,
+            ModifierKeyCode::LeftAlt,
+            ModifierKeyCode::RightAlt,
+            ModifierKeyCode::LeftShift,
+            ModifierKeyCode::RightShift,
+        ].into_iter()
+            .filter(|m| modifiers.contains(m))
+            .map(KeyCode::Modifier);
+
+        let keystroke = modifier_key_codes.chain(keystroke.into_iter()).collect();
+
         Self {
             keystroke
         }
+    }
+
+    pub fn contains(&self, key: KeyCode) -> bool {
+        self.keystroke.contains(&key)
     }
 }
 

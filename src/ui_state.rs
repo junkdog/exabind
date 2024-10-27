@@ -1,15 +1,16 @@
 use crate::styling::Catppuccin;
 use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, KeyboardWidget};
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Offset, Rect};
+use ratatui::layout::{Offset, Rect, Size};
 use ratatui::style::{Style, Stylize};
-use ratatui::widgets::{Block, Clear, Widget};
+use ratatui::widgets::{Block, Clear, ListState, Widget};
 use tachyonfx::{ref_count, BufferRenderer, CellIterator, Duration, Effect, RefCount, Shader};
 use crate::buffer::blit_buffer;
 use crate::effect::outline_border;
 
 pub struct UiState {
     kbd: KeyboardState,
+    pub shortcut_categories: ListState,
 }
 
 struct KeyboardState {
@@ -29,9 +30,14 @@ impl UiState {
                 buf_work: ref_count(Buffer::empty(area)),
                 buf_shortcuts: ref_count(Buffer::empty(area)),
                 buf_shortcuts_visible: false,
-                effects: Vec::new()
-            }
+                effects: Vec::new(),
+            },
+            shortcut_categories: ListState::default(),
         }
+    }
+
+    pub fn kbd_size(&self) -> Size {
+        self.kbd.buf_base.borrow().area.as_size()
     }
 
     pub fn reset_kbd_buffer<K: KeyboardLayout>(&self, kbd: K) {

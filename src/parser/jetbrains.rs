@@ -22,6 +22,18 @@ impl KeyMap {
             .filter(|a| a.is_bound())
             .map(|a| (categorize_action(a), a))
     }
+
+    pub fn categories(&self) -> Vec<String> {
+        let mut categories: Vec<_> = self.actions.iter()
+            .map(categorize_action)
+            .unique()
+            .map(|s| s.to_string())
+            .collect();
+
+        categories.sort_by(|a, b| a.cmp(b));
+
+        categories
+    }
 }
 
 impl Display for KeyMap {
@@ -172,17 +184,17 @@ mod parser {
             "comma"              => Char(','),
             "period"             => Char('.'),
             "semicolon"          => Char(';'),
-            "cancel"             => Esc, // fixme for the time being
-            "numpad0"            => Esc, // fixme for the time being
-            "numpad1"            => Esc, // fixme for the time being
-            "numpad2"            => Esc, // fixme for the time being
-            "numpad3"            => Esc, // fixme for the time being
-            "numpad4"            => Esc, // fixme for the time being
-            "numpad5"            => Esc, // fixme for the time being
-            "numpad6"            => Esc, // fixme for the time being
-            "numpad7"            => Esc, // fixme for the time being
-            "numpad8"            => Esc, // fixme for the time being
-            "numpad9"            => Esc, // fixme for the time being
+            "cancel"             => Menu, // fixme for the time being
+            "numpad0"            => Menu, // fixme for the time being
+            "numpad1"            => Menu, // fixme for the time being
+            "numpad2"            => Menu, // fixme for the time being
+            "numpad3"            => Menu, // fixme for the time being
+            "numpad4"            => Menu, // fixme for the time being
+            "numpad5"            => Menu, // fixme for the time being
+            "numpad6"            => Menu, // fixme for the time being
+            "numpad7"            => Menu, // fixme for the time being
+            "numpad8"            => Menu, // fixme for the time being
+            "numpad9"            => Menu, // fixme for the time being
             "f1"                 => F(1),
             "f2"                 => F(2),
             "f3"                 => F(3),

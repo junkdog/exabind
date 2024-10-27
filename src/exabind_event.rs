@@ -7,6 +7,6 @@ pub enum ExabindEvent {
     /// A key event.
     KeyPress(KeyEvent),
     ToggleHighlightShortcuts,
-    StarupAnimation,
+    StartupAnimation,
 }
 

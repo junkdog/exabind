@@ -138,7 +138,10 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             Insert => (NAV_KEY_X_START, 3),
             Null => (0, 0),
             ScrollLock => (NAV_KEY_X_START + KEY_W - 1, 0),
-            NumLock => (0, 0),
+            NumLock => {
+                let p = self.key_position(Menu);
+                (p.x, p.y)
+            },
             PrintScreen => (NAV_KEY_X_START, 0),
             Pause => (NAV_KEY_X_START + key_offset(2), 0),
             Menu => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W - 5, 11),

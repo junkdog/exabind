@@ -30,7 +30,7 @@ impl InputProcessor {
         match event.code {
             KeyCode::Char('q') => Some(ExabindEvent::Shutdown),
             KeyCode::Char('h') => Some(ExabindEvent::ToggleHighlightShortcuts),
-            KeyCode::Char('s') => Some(ExabindEvent::StarupAnimation),
+            KeyCode::Char('s') => Some(ExabindEvent::StartupAnimation),
             _ => None,
         }
     }
