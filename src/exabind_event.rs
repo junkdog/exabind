@@ -9,6 +9,8 @@ pub enum ExabindEvent {
     KeyPress(KeyEvent),
     ToggleHighlightShortcuts,
     StartupAnimation,
+    NextShortcut,
+    PreviousShortcut,
     NextCategory,
     PreviousCategory,
     ToggleFilterKey(ModifierKeyCode),

@@ -9,6 +9,7 @@ use crate::shortcut::{Action, Shortcut};
 pub struct ShortcutsWindow {
     title: String,
     shortcuts: Vec<Action>,
+    pub selected_shortcut: Option<usize>,
     size: Size,
     row_style: Style,
     selected_row_style: Style,
@@ -54,12 +55,37 @@ impl ShortcutsWindow {
             title,
             shortcuts,
             size: Size::new(width as _, height as _),
+            selected_shortcut: None,
             row_style,
             selected_row_style,
             keystroke_style,
             action_name_style,
             max_shortcut_title_width: width_name as _,
             max_shortcut_keystroke_width: width_shortcut as _,
+        }
+    }
+
+    pub fn clear_selected_shortcut(&mut self) {
+        self.selected_shortcut = None;
+    }
+
+    pub fn select_next_shortcut(&mut self) {
+        if let Some(selected) = self.selected_shortcut {
+            if selected < self.shortcuts.len() - 1 {
+                self.selected_shortcut = Some(selected + 1);
+            }
+        } else {
+            self.selected_shortcut = Some(0);
+        }
+    }
+
+    pub fn select_previous_shortcut(&mut self) {
+        if let Some(selected) = self.selected_shortcut {
+            if selected > 0 {
+                self.selected_shortcut = Some(selected - 1);
+            }
+        } else {
+            self.selected_shortcut = Some(0);
         }
     }
 

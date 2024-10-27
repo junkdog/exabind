@@ -6,7 +6,7 @@ use crate::widget::{resolve_key_code, AnsiKeyboardTklLayout, KeyCap, KeyboardLay
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Rect, Size};
 use ratatui::style::{Style, Stylize};
-use ratatui::widgets::{Block, Clear, ListState, Widget};
+use ratatui::widgets::{Block, Clear, ListState, TableState, Widget};
 use tachyonfx::{ref_count, BufferRenderer, CellIterator, Duration, Effect, RefCount, Shader};
 use crate::app::KeyMapContext;
 use crate::buffer::blit_buffer;
@@ -90,7 +90,7 @@ impl UiState {
         }
     }
 
-    pub fn render_selected_actions(
+    pub fn render_selection_outline(
         &mut self,
         category: &str,
         context: &KeyMapContext,

@@ -21,7 +21,19 @@ impl StatefulWidget for ShortcutCategoriesWidget {
     type State = ListState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        List::new(self.categories.iter().map(|(name, count)| format!("{} ({})", name, count)))
+        let categories: Vec<_> = self.categories.iter()
+            .map(|(name, count)| format!("{} ({})", name, count))
+            .collect();
+
+        let max_width = categories.iter()
+            .map(|s| s.char_indices().count())
+            .max()
+            .unwrap_or(0);
+
+        let mut area = area.clone();
+        area.width = 1 + max_width as u16;
+
+        List::new(categories)
             .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
             .render(area, buf, state);
     }
