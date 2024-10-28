@@ -158,12 +158,6 @@ impl UiState {
         // outline_border(&key_caps, border_style)
         outline_border(&sorted_kbd_layout, border_style)
             .process(Duration::from_millis(17), &mut buf, area);
-
-
-        // mark all cells with default style as skip
-        // CellIterator::new(&mut buf, area,  None)
-        //     .filter(|(_, c)| c.symbol() == " " && c.style() == default_style)
-        //     .for_each(|(pos, c)| c.skip = true);
     }
 
     pub fn toggle_highlight_shortcuts(&mut self) {

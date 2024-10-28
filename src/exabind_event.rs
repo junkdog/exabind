@@ -14,5 +14,11 @@ pub enum ExabindEvent {
     NextCategory,
     PreviousCategory,
     ToggleFilterKey(ModifierKeyCode),
+    ActivateUiElement(UiElement)
 }
 
+#[derive(Debug, Clone)]
+pub enum UiElement {
+    Category,
+    Shortcut,
+}

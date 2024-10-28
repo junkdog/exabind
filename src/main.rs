@@ -14,26 +14,21 @@ mod shortcut;
 mod buffer;
 
 use app::ExabindApp;
-use std::collections::{HashMap, HashSet};
 
+use crate::app::KeyMapContext;
 use crate::effect::starting_up;
 use crate::event_handler::EventHandler;
-use crate::parser::jetbrains::{JetbrainsKeymapSource, KeyMap};
+use crate::parser::jetbrains::JetbrainsKeymapSource;
 use crate::tui::Tui;
-use crate::ui_state::UiState;
-use crate::widget::{resolve_key_code, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, ShortcutCategoriesWidget, ShortcutsWindow};
-use ::crossterm::event::KeyCode;
+use crate::widget::{AnsiKeyboardTklLayout, KeyboardLayout, ShortcutCategoriesWidget, ShortcutsWindow};
 use ratatui::layout::Constraint::Percentage;
 use ratatui::layout::{Constraint, Layout, Offset};
-use ratatui::prelude::{Frame, Stylize, StatefulWidget};
-use std::io;
-use std::os::linux::raw::stat;
-use std::path::PathBuf;
+use ratatui::prelude::{Frame, StatefulWidget, Stylize};
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{ListState, StatefulWidgetRef, TableState};
+use std::io;
+use std::path::PathBuf;
 use tachyonfx::{CenteredShrink, Duration, Shader};
-use crate::app::KeyMapContext;
-use crate::shortcut::Action;
 
 struct StatefulWidgets {
     shortcuts_window: ShortcutsWindow
@@ -73,8 +68,8 @@ impl StatefulWidgets {
 
 fn main() -> io::Result<()> {
     let mut events = EventHandler::new(std::time::Duration::from_millis(33));
-    let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
-    // let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
+    // let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
+    let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
     let mut app = ExabindApp::new(events.sender(), keymap);
     let mut ui_state = ui_state::UiState::new();
     let mut tui = Tui::new(ratatui::init(), events);
@@ -133,26 +128,9 @@ fn ui(
         Constraint::Percentage(100),
     ]).split(f.area())[2];
     let mut list_state = ListState::default().with_selected(Some(keymap_context.current_category));
+
     ShortcutCategoriesWidget::new(keymap_context.categories.clone())
         .render(category_area, f.buffer_mut(), &mut list_state);
-
-    let keymap = &keymap_context.keymap;
-
-    // render shortcuts
-    // let selected_category = keymap_context.categories[keymap_context.current_category].clone();
-    // let actions: Vec<_> = keymap.valid_actions()
-    //     .filter(|(cat, _a)| *cat == &(selected_category.0))
-    //     .map(|(_cat, a)| a.clone())
-    //     .collect();
-
-    // ShortcutsWindow::new(selected_category.0,
-    //     Style::default(),
-    //     Style::default(),
-    //     Color::Green,
-    //     actions
-    // )
-    // .render_ref(shortcut_area, f.buffer_mut(), &mut ui_state.shortcuts_state);
-    // ).render_ref(shortcut_area, f.buffer_mut(), &mut ui_state.shortcuts_state);
 
     stateful_widgets
         .shortcuts_window

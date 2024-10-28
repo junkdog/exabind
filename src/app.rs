@@ -145,6 +145,7 @@ impl ExabindApp {
             KeyPress(_)               => self.input_processor.apply(&event),
             ToggleHighlightShortcuts  => ui_state.toggle_highlight_shortcuts(),
             StartupAnimation          => ui_state.register_kbd_effect(starting_up()),
+            ActivateUiElement(el)     => self.input_processor.change_input(el),
             NextCategory              => {
                 self.keymap_context.next_category();
                 self.stateful_widgets.update_shortcut_category(&self.keymap_context);
