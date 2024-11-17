@@ -5,78 +5,115 @@ mod dispatcher;
 mod app;
 mod input;
 mod tui;
-mod effect;
 mod parser;
 mod crossterm;
 mod styling;
 mod ui_state;
 mod shortcut;
 mod buffer;
+mod keymap;
+mod stateful_widgets;
+mod fx;
 
 use app::ExabindApp;
 
 use crate::app::KeyMapContext;
-use crate::effect::starting_up;
+use crate::fx::effect::{animate_in_all_categories, starting_up};
 use crate::event_handler::EventHandler;
+use crate::keymap::IntoKeyMap;
 use crate::parser::jetbrains::JetbrainsKeymapSource;
+use crate::parser::kde::parse_kglobalshortcuts;
+use crate::stateful_widgets::StatefulWidgets;
+use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
 use crate::tui::Tui;
-use crate::widget::{AnsiKeyboardTklLayout, KeyboardLayout, ShortcutCategoriesWidget, ShortcutsWindow};
+use crate::widget::{AnsiKeyboardTklLayout, KeyboardLayout, ShortcutsWidget};
+use ::crossterm::event::{KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
+use ::crossterm::execute;
+use ::crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
+use ratatui::backend::CrosstermBackend;
 use ratatui::layout::Constraint::Percentage;
-use ratatui::layout::{Constraint, Layout, Offset};
+use ratatui::layout::Layout;
 use ratatui::prelude::{Frame, StatefulWidget, Stylize};
-use ratatui::style::{Color, Style};
-use ratatui::widgets::{ListState, StatefulWidgetRef, TableState};
+use ratatui::style::Style;
+use ratatui::widgets::{Block, StatefulWidgetRef};
+use ratatui::Terminal;
 use std::io;
+use std::io::{stdout, Stdout};
 use std::path::PathBuf;
 use tachyonfx::{CenteredShrink, Duration, Shader};
 
-struct StatefulWidgets {
-    shortcuts_window: ShortcutsWindow
+fn shortcut_widget(context: &KeyMapContext, category: &str) -> ShortcutsWidget {
+    let (category_idx, actions) = context.filtered_actions_by_category(category);
+    let base_color = Theme.shortcuts_base_color(category_idx);
+
+    ShortcutsWidget::new(
+        category.to_string(),
+        Theme.shortcuts_widget_keystroke(),
+        Theme.shortcuts_widget_label(),
+        base_color,
+        actions
+    )
 }
 
-impl StatefulWidgets {
-    fn new() -> Self {
-        Self {
-            shortcuts_window: ShortcutsWindow::new(
-                "Shortcuts".to_string(),
-                Style::default(),
-                Style::default(),
-                Color::Green,
-                vec![]
-            )
-        }
-    }
+fn shortcut_widgets(context: &KeyMapContext) -> Vec<ShortcutsWidget> {
+    context.unordered_categories().iter()
+        .map(|category| shortcut_widget(context, category))
+        .collect()
+}
 
-    fn update_shortcut_category(
-        &mut self,
-        keymap_context: &KeyMapContext,
-    ) {
-        let selected_category = keymap_context.categories[keymap_context.current_category].clone();
-        let actions = keymap_context.keymap.valid_actions()
-            .filter(|(cat, _a)| *cat == &(selected_category.0))
-            .map(|(_cat, a)| a.clone())
-            .collect();
 
-        self.shortcuts_window = ShortcutsWindow::new(selected_category.0,
-            Style::default(),
-            Style::default(),
-            Color::Green,
-            actions
-        )
-    }
+fn set_panic_hook() {
+    let hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        ratatui::restore();
+        hook(info);
+    }));
+}
+
+
+fn init_crossterm() -> io::Result<Terminal<CrosstermBackend<Stdout>>> {
+    set_panic_hook();
+    enable_raw_mode()?;
+
+    let mut stdout = stdout();
+
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES)
+    )?;
+    let backend = CrosstermBackend::new(stdout);
+    Terminal::new(backend)
 }
 
 fn main() -> io::Result<()> {
     let mut events = EventHandler::new(std::time::Duration::from_millis(33));
     // let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
-    let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
-    let mut app = ExabindApp::new(events.sender(), keymap);
+    // let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
+    let keymap = PathBuf::from("test/kglobalshortcutsrc")
+        .into_keymap(parse_kglobalshortcuts);
+
     let mut ui_state = ui_state::UiState::new();
+    let sender = events.sender();
     let mut tui = Tui::new(ratatui::init(), events);
+    ui_state.screen = tui.size();
+    let mut app = ExabindApp::new(&mut ui_state, sender, keymap);
+
+    execute!(
+        stdout(),
+        PushKeyboardEnhancementFlags(
+            KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+            | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
+        )
+    )?;
+    // let mut tui = Tui::new(init_crossterm()?, events);
 
     ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout::default());
     ui_state.register_kbd_effect(starting_up());
-    ui_state.render_selection_outline(app.keymap_context().category(), app.keymap_context());
+    ui_state.render_selection_outline(app.keymap_context());
+
+    let animate_category_widgets = animate_in_all_categories(app.stateful_widgets().category_widgets());
+    app.stage_mut().add_effect(animate_category_widgets);
 
     while app.is_running() {
         let elapsed = app.update_time();
@@ -86,7 +123,7 @@ fn main() -> io::Result<()> {
 
         tui.draw(|f| {
             ui_state.apply_kbd_effects(elapsed);
-            ui(f, app.widgets(), app.keymap_context(), &mut ui_state);
+            ui(f, app.stateful_widgets(), app.keymap_context(), &mut ui_state);
             effects(elapsed, &mut app, f);
         })?;
     }
@@ -101,7 +138,7 @@ fn effects(
 ) {
     let area = f.area().clone();
     let buf = f.buffer_mut();
-    app.update_effects(elapsed, buf, area);
+    app.process_effects(elapsed, buf, area);
 }
 
 fn ui(
@@ -110,33 +147,26 @@ fn ui(
     keymap_context: &KeyMapContext,
     ui_state: &mut ui_state::UiState
 ) {
+    ui_state.screen = f.area().as_size();
     if f.area().is_empty() || f.area().width == 2500 || f.area().height < 3 {
         return;
     }
 
+    Block::new()
+        .style(Style::new().bg(CATPPUCCIN.crust))
+        .render(f.area(), f.buffer_mut());
+
     ui_state.render_kbd(f.buffer_mut());
 
-    let kbd_size = ui_state.kbd_size();
-    let mut shortcut_area = f.area().clone()
-        .offset(Offset{ x: 0, y: kbd_size.height as i32 + 1 });
-    shortcut_area.height -= kbd_size.height;
+    let area = f.area();
 
-    // shortcut category selection
-    let category_area = Layout::horizontal([
-        Constraint::Min(kbd_size.width),
-        Constraint::Length(1),
-        Constraint::Percentage(100),
-    ]).split(f.area())[2];
-    let mut list_state = ListState::default().with_selected(Some(keymap_context.current_category));
-
-    ShortcutCategoriesWidget::new(keymap_context.categories.clone())
-        .render(category_area, f.buffer_mut(), &mut list_state);
-
-    stateful_widgets
-        .shortcuts_window
-        .render_ref(shortcut_area, f.buffer_mut(), &mut TableState::new().with_selected(stateful_widgets.shortcuts_window.selected_shortcut));
+    // shortcuts window
+    stateful_widgets.shortcuts
+        .iter()
+        .for_each(|w| w.render_ref(area, f.buffer_mut(), &mut ui_state.shortcuts));
 
     let demo_area = Layout::horizontal([Percentage(50), Percentage(50)])
         .split(f.area())[1];
+    use ratatui::prelude::Widget;
     // widget::ColorDemoWidget::new().render(demo_area, f.buffer_mut());
 }

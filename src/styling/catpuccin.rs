@@ -1,5 +1,7 @@
 use ratatui::style::Color;
 
+pub const CATPPUCCIN: Catppuccin = Catppuccin::new();
+
 pub struct Catppuccin {
     pub rosewater: Color,
     pub flamingo: Color,

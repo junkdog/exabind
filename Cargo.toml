@@ -11,3 +11,4 @@ ratatui = { version = "0.29.0", features = ["unstable-widget-ref"] }
 tachyonfx = "0.8.0"
 zip = "2.2.0"
 itertools = "0.13.0"
+rectangle-pack = "0.4.2"

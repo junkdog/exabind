@@ -6,50 +6,7 @@ use std::fmt::Display;
 use std::io::Read;
 use std::path::PathBuf;
 use itertools::Itertools;
-
-#[derive(Debug, Clone)]
-pub struct KeyMap {
-    version: String,
-    name: String,
-    parent: Option<String>,
-    actions: Vec<Action>,
-}
-
-
-
-impl KeyMap {
-    pub fn valid_actions(&self) -> impl Iterator<Item=(&'static str, &Action)> {
-        self.actions.iter()
-            .filter(|a| a.is_bound())
-            .map(|a| (categorize_action(a), a))
-    }
-
-    pub fn categories(&self) -> Vec<(String, usize)> {
-        let mut categories: HashMap<String, usize> = HashMap::new();
-        self.actions.iter()
-            .filter(|a| a.is_bound())
-            .map(categorize_action)
-            .for_each(|category| {
-                let count = categories.entry(category.to_string()).or_insert(0);
-                *count += 1;
-            });
-
-        let mut cats: Vec<_> = categories.into_iter().collect();
-        cats.sort_by(|(c1, _), (c2, _)| c1.cmp(c2));
-        cats
-
-    }
-}
-
-impl Display for KeyMap {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let format = |(category, action): (_, &Action)| format!("\t{} ({})", action.to_string(), category);
-        let parent = self.parent.as_ref().map(|s| s.as_str()).unwrap_or("");
-        // let actions = self.actions.iter().map(format).collect::<Vec<_>>().join("\n");
-        let actions = self.valid_actions().map(format).collect::<Vec<_>>().join("\n");
-        write!(f, "keymap name={} parent={}:\n{}", self.name, parent, actions)
-    }
-}
+use crate::keymap::KeyMap;
 
 fn categorize_action(action: &Action) -> &'static str {
     match action.name() {
@@ -257,26 +214,34 @@ fn as_action(action_node: &XmlTag<'_>) -> Action {
         .map(as_shortcut)
         .collect();
 
-    Action::new(id, shortcuts)
+    Action::new_filter_empty(id, "".to_string(), shortcuts)
 }
 
 fn as_keymap(xml: XmlTag<'_>) -> KeyMap {
-    KeyMap {
-        version: xml.attribute("version").expect("version to be present").to_string(),
-        name: xml.attribute("name").expect("name to be present").to_string(),
-        parent: xml.attribute("parent").map(|s| s.to_string()),
-        actions: xml.children()
-            .iter()
-            .filter(|c| c.name() == "action")
-            .map(as_action)
-            .collect(),
-    }
+    let actions: HashMap<_, _> = xml.children()
+        .iter()
+        .filter(|c| c.name() == "action")
+        .map(as_action)
+        .filter(|a| a.is_bound())
+        .map(|a| (categorize_action(&a).to_string(), vec![a]))
+        .collect();
+    KeyMap::new(
+        xml.attribute("name").expect("name to be present").to_string(),
+        actions
+    )
 }
 
 pub fn parse_jetbrains_keymap(input: &str) -> Option<KeyMap> {
     let res = parse(xml_parser(), input);
     debug_assert!(res.state.is_empty(), "Unparsed: '{}'", res.state);
     res.result.map(as_keymap)
+}
+
+fn valid_actions(keymap: &KeyMap) -> impl Iterator<Item=(&'static str, &Action)> {
+    // req re-impl since update to KeyMap::actions
+    keymap.actions()
+        .filter(|a| a.is_bound())
+        .map(|a| (categorize_action(a), a))
 }
 
 #[cfg(test)]
@@ -369,33 +334,36 @@ mod tests {
         keymap: KeyMap,
         also_sort_by_category: bool,
     ) {
-        let mut actions = keymap.valid_actions()
+        let mut actions = keymap.actions()
             .collect::<Vec<_>>();
 
-        if also_sort_by_category {
-            actions.sort_by(|(c1, a1), (c2, a2)| c1.cmp(c2).then(a1.name().cmp(a2.name())));
-        } else {
-            actions.sort_by(|(_, a1), (_, a2)| a1.name().cmp(a2.name()));
-        }
+        // if also_sort_by_category {
+        //     actions.sort_by(|(c1, a1), (c2, a2)| c1.cmp(c2).then(a1.name().cmp(a2.name())));
+        // } else {
+        //     actions.sort_by(|(_, a1), (_, a2)| a1.name().cmp(a2.name()));
+        // }
 
         // count actions per category
-        let category_counts:HashMap<&str, usize> = actions.iter()
-            .map(|(category, _)| category)
-            .fold(HashMap::new(), |mut acc, category| {
-                let count = acc.entry(category).or_insert(0);
-                *count += 1;
-                acc
-            });
+        // let category_counts:HashMap<&str, usize> = actions.iter()
+        //     .map(|(category, _)| category)
+        //     .fold(HashMap::new(), |mut acc, category| {
+        //         let count = acc.entry(category).or_insert(0);
+        //         *count += 1;
+        //         acc
+        //     });
 
-        println!("Actions per category:");
-        category_counts.iter().for_each(|(category, count)| {
-            println!("\t{}: {}", category, count);
-        });
-        println!();
+        // println!("Actions per category:");
+        // category_counts.iter().for_each(|(category, count)| {
+        //     println!("\t{}: {}", category, count);
+        // });
+        // println!();
 
         print!("Actions by category, name:");
-        actions.iter().for_each(|(category, action)| {
-            println!("\t{} ({})", action.to_string(), category);
+        // actions.iter().for_each(|(category, action)| {
+        //     println!("\t{} ({})", action.to_string(), category);
+        // });
+        actions.iter().for_each(|action| {
+            println!("\t{}", action.to_string());
         });
     }
 
@@ -479,3 +447,4 @@ impl JetbrainsKeymapSource for PathBuf {
 pub trait JetbrainsKeymapSource {
     fn parse_jetbrains_keymap(&self) -> KeyMap;
 }
+

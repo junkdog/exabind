@@ -1,11 +1,11 @@
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Layout, Rect};
-use ratatui::layout::Constraint::Percentage;
-use ratatui::prelude::Widget;
-use ratatui::style::{Color, Style};
-use ratatui::text::{Line, Span, Text};
-use tachyonfx::HslConvertable;
 use crate::styling::Catppuccin;
+use ratatui::buffer::Buffer;
+use ratatui::layout::Constraint::Percentage;
+use ratatui::layout::{Alignment, Layout, Rect};
+use ratatui::prelude::Widget;
+use ratatui::style::Style;
+use ratatui::text::{Line, Span};
+use tachyonfx::HslConvertable;
 
 pub struct ColorDemoWidget;
 

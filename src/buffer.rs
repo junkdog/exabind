@@ -29,16 +29,18 @@ pub fn blit_buffer(
 
     for y in l_clip_y..(aux_area.height - r_clip_y) {
         for x in l_clip_x..(aux_area.width - r_clip_x) {
-            if !src.cell(Position::new(x, y)).unwrap().skip {
-                if let (Some(c), Some(new_c)) = (
-                    dst.cell_mut(Position::new(
-                        x + aux_area.x - l_clip_x,
-                        y + aux_area.y - l_clip_y,
-                    )),
-                    src.cell(Position::new(x, y)),
-                ) {
-                    *c = new_c.clone();
-                }
+            if src.cell(Position::new(x, y)).unwrap().skip {
+                continue;
+            }
+
+            if let (Some(c), Some(new_c)) = (
+                dst.cell_mut(Position::new(
+                    x + aux_area.x - l_clip_x,
+                    y + aux_area.y - l_clip_y,
+                )),
+                src.cell(Position::new(x, y)),
+            ) {
+                *c = new_c.clone();
             }
         }
     }

@@ -9,12 +9,14 @@ pub enum ExabindEvent {
     KeyPress(KeyEvent),
     ToggleHighlightShortcuts,
     StartupAnimation,
+    OpenCategoryFxSandbox,
     NextShortcut,
     PreviousShortcut,
     NextCategory,
     PreviousCategory,
     ToggleFilterKey(ModifierKeyCode),
-    ActivateUiElement(UiElement)
+    ActivateUiElement(UiElement),
+    CategoryWidgetNavigationOrder(Vec<usize>)
 }
 
 #[derive(Debug, Clone)]

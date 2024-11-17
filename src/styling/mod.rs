@@ -1,5 +1,5 @@
 mod catpuccin;
 mod theme;
 
-pub use catpuccin::Catppuccin;
+pub use catpuccin::*;
 pub use theme::*;

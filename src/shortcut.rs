@@ -5,6 +5,7 @@ use crate::crossterm::format_keycode;
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Action {
     id: String,
+    category: String,
     shortcuts: Vec<Shortcut>,
 }
 
@@ -23,10 +24,7 @@ impl Shortcut {
             .partition(|k| matches!(k, KeyCode::Modifier(_)));
 
         let as_modifier = |k: KeyCode| {
-            match k {
-                KeyCode::Modifier(m) => Some(m),
-                _                    => None
-            }
+            if let KeyCode::Modifier(m) = k { Some(m) } else { None }
         };
 
         let modifiers: Vec<_> = modifiers.into_iter()
@@ -40,6 +38,8 @@ impl Shortcut {
             ModifierKeyCode::RightHyper,
             ModifierKeyCode::LeftSuper,
             ModifierKeyCode::RightSuper,
+            ModifierKeyCode::LeftMeta,
+            ModifierKeyCode::RightMeta,
             ModifierKeyCode::LeftControl,
             ModifierKeyCode::RightControl,
             ModifierKeyCode::LeftAlt,
@@ -73,15 +73,24 @@ impl Shortcut {
 }
 
 impl Action {
-    pub fn new(id: String, shortcuts: Vec<Shortcut>) -> Self {
+    pub fn new_filter_empty<S: ToString>(
+        id: S,
+        category: S,
+        shortcuts: Vec<Shortcut>
+    ) -> Self {
         Self {
-            id,
-            shortcuts
+            id: id.to_string(),
+            category: category.to_string(),
+            shortcuts: shortcuts.into_iter().filter(|s| !s.keystroke.is_empty()).collect(),
         }
     }
 
     pub fn name(&self) -> &str {
         &self.id
+    }
+
+    pub fn category(&self) -> &str {
+        &self.category
     }
 
     pub fn shortcuts(&self) -> &[Shortcut] {
@@ -90,6 +99,10 @@ impl Action {
 
     pub fn is_bound(&self) -> bool {
         !self.shortcuts.is_empty()
+    }
+
+    pub fn update_category<S: ToString>(&mut self, category: S) {
+        self.category = category.to_string();
     }
 }
 

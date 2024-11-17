@@ -33,17 +33,19 @@ impl InputProcessor {
     }
 
     fn resolve_key_pressed(event: &KeyEvent) -> Option<ExabindEvent> {
-        use KeyCode::*;
+        use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
         match event.code {
             Char('q')     => Some(ExabindEvent::Shutdown),
             Char('h')     => Some(ExabindEvent::ToggleHighlightShortcuts),
+            Char('a')     => Some(ExabindEvent::OpenCategoryFxSandbox),
             Char('s')     => Some(ExabindEvent::StartupAnimation),
             Up            => Some(ExabindEvent::PreviousCategory),
             Down          => Some(ExabindEvent::NextCategory),
-            // Modifier(mfc) => Some(ExabindEvent::ToggleFilterKey(mfc)),
-            Char('1')     => Some(ExabindEvent::ToggleFilterKey(ModifierKeyCode::LeftControl)),
-            Char('2')     => Some(ExabindEvent::ToggleFilterKey(ModifierKeyCode::LeftAlt)),
-            Char('3')     => Some(ExabindEvent::ToggleFilterKey(ModifierKeyCode::LeftShift)),
+            Modifier(mfc) => Some(ExabindEvent::ToggleFilterKey(mfc)),
+            Char('1')     => Some(ExabindEvent::ToggleFilterKey(LeftShift)),
+            Char('2')     => Some(ExabindEvent::ToggleFilterKey(LeftControl)),
+            Char('3')     => Some(ExabindEvent::ToggleFilterKey(LeftMeta)),
+            Char('4')     => Some(ExabindEvent::ToggleFilterKey(LeftAlt)),
             _             => None,
         }
     }

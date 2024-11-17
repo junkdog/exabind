@@ -1,20 +1,20 @@
-use std::collections::HashMap;
-use crossterm::event::{KeyCode, ModifierKeyCode};
+use crate::styling::{Catppuccin, ExabindTheme, Theme};
 use crossterm::event::KeyCode::{Delete, Insert};
+use crossterm::event::{KeyCode, ModifierKeyCode};
 use ratatui::buffer::{Buffer, Cell};
-use ratatui::layout::{Alignment, Margin, Offset, Rect, Size};
-use ratatui::prelude::{Color, Position};
+use ratatui::layout::{Alignment, Margin, Rect, Size};
+use ratatui::prelude::Position;
 use ratatui::style::Style;
 use ratatui::text::{Span, Text};
-use ratatui::widgets::{Block, Widget, WidgetRef};
-use crate::styling::Catppuccin;
+use ratatui::widgets::{Widget, WidgetRef};
+use std::collections::HashMap;
 // ref: https://upload.wikimedia.org/wikipedia/commons/3/3a/Qwerty.svg
 
 // override with custom styles for key codes
 pub struct KeyboardWidget {
     keys: Vec<KeyCap>,
     cap_style: Style,
-    border_style: Style,
+    border_style: Option<Style>,
 }
 
 
@@ -52,7 +52,7 @@ const COLORS: Catppuccin = Catppuccin::new();
 
 impl KeyboardLayout for AnsiKeyboardTklLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect {
-        let size = match resolve_key_code(key_code) {
+        let size = match supplant_key_code(key_code) {
             KeyCode::Char(' ') => Size::new(SPACE_W, KEY_H),
             KeyCode::Char('\\') => Size::new(9, KEY_H),
             KeyCode::Tab => Size::new(TAB_W, KEY_H),
@@ -177,8 +177,8 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             Char('m'), Char(','), Char('.'), Char('/'), Modifier(RightShift),
 
             // bottom row
-            Modifier(LeftControl), Modifier(LeftSuper), Modifier(LeftAlt), Char(' '),
-            Modifier(RightAlt), Menu, Modifier(RightSuper), Modifier(RightControl),
+            Modifier(LeftControl), Modifier(LeftMeta), Modifier(LeftAlt), Char(' '),
+            Modifier(RightAlt), Menu, Modifier(RightMeta), Modifier(RightControl),
 
             // nav keys
             PrintScreen, ScrollLock, Pause,
@@ -252,18 +252,20 @@ impl Into<KeyCap> for (KeyCode, Rect) {
 }
 
 impl KeyboardWidget {
-    pub fn new(keys: Vec<KeyCap>) -> Self {
+    pub fn new(
+        keys: Vec<KeyCap>,
+    ) -> Self {
         Self::new_with_style(
             keys,
-            Style::default().fg(COLORS.mantle).bg(COLORS.crust),
-            Style::default().fg(COLORS.mantle)
+            Theme.kbd_cap_text(),
+            Some(Theme.kbd_cap_border()),
         )
     }
 
     pub fn new_with_style(
         keys: Vec<KeyCap>,
         cap_style: Style,
-        border_style: Style
+        border_style: Option<Style>,
     ) -> Self {
         Self {
             keys,
@@ -295,14 +297,14 @@ pub struct KeyCap {
 pub struct KeyCapWidget {
     key_cap: KeyCap,
     cap_style: Style,
-    border_style: Style,
+    border_style: Option<Style>,
 }
 
 impl KeyCapWidget {
     pub fn new(
         key_cap: KeyCap,
         cap_style: Style,
-        border_style: Style
+        border_style: Option<Style>,
     ) -> Self {
 
         let colors = Catppuccin::new();
@@ -415,14 +417,18 @@ impl KeyCap {
 
 impl Widget for KeyCapWidget {
     fn render(self, _area: Rect, buf: &mut Buffer) {
-        render_border(self.key_cap.clone(), self.border_style, buf);
+        if let Some(border_style) = self.border_style {
+            render_border(self.key_cap.clone(), border_style, buf);
+        }
         self.render_keypad(buf);
     }
 }
 
 impl WidgetRef for KeyCapWidget {
     fn render_ref(&self, _area: Rect, buf: &mut Buffer) {
-        render_border(self.key_cap.clone(), self.border_style, buf);
+        if let Some(border_style) = self.border_style {
+            render_border(self.key_cap.clone(), border_style, buf);
+        }
         self.render_keypad(buf);
     }
 }
@@ -493,7 +499,7 @@ pub fn draw_key_border(
 
 // fixme: this is a mess - do something about it + what about localization
 // translate shifted key_codes to their unshifted counterparts
-pub fn resolve_key_code(key_code: KeyCode) -> KeyCode {
+pub fn supplant_key_code(key_code: KeyCode) -> KeyCode {
     use KeyCode::*;
 
     match key_code {
@@ -507,6 +513,7 @@ pub fn resolve_key_code(key_code: KeyCode) -> KeyCode {
         Char('{') => Char('['),
         Char('}') => Char(']'),
         Char('|') => Char('\\'),
+        Char('~') => Char('`'),
         Char('!') => Char('1'),
         Char('@') => Char('2'),
         Char('#') => Char('3'),
