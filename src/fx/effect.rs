@@ -41,8 +41,9 @@ pub fn selected_category(
         let area = ctx.area;
 
         let mut update_cell = |(x, y): (u16, u16), idx: usize| {
-            let cell = &mut buf[(x, y)];
-            cell.set_fg(color_cycle.color_at(idx).clone());
+            buf.cell_mut((x, y)).map(|cell| {
+                cell.set_fg(color_cycle.color_at(idx).clone());
+            });
         };
 
         (area.x..area.right()).enumerate().for_each(|(i, x)| {
