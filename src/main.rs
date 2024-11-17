@@ -10,10 +10,10 @@ mod crossterm;
 mod styling;
 mod ui_state;
 mod shortcut;
-mod buffer;
 mod keymap;
 mod stateful_widgets;
 mod fx;
+mod color_cycle;
 
 use app::ExabindApp;
 

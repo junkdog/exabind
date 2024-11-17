@@ -47,8 +47,6 @@ impl Shader for Unique {
         self.fx.process(duration, buf, area)
     }
 
-    fn execute(&mut self, _alpha: f32, _area: Rect, _cell_iter: CellIterator) {}
-
     fn done(&self) -> bool {
         let binding = self.id_context.borrow();
         let iid = binding.deref().instance_id;

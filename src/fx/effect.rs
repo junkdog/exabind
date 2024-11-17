@@ -9,6 +9,7 @@ use tachyonfx::fx::{never_complete, parallel, prolong_start, sequence};
 use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, Interpolatable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 use tachyonfx::fx::Direction::{DownToUp, UpToDown};
 use tachyonfx::Interpolation::Linear;
+use crate::color_cycle::PingPongColorCycle;
 
 pub fn fill_bartilt<T: Into<EffectTimer>>(timer: T) -> Effect {
     let rng = SimpleRng::default();
@@ -152,22 +153,17 @@ pub fn fade_in_keys() -> Effect {
     ])
 }
 
+
+
 pub fn led_kbd_border() -> Effect {
     use tachyonfx::{fx::*, CellFilter::*};
 
     let [color_1, color_2, color_3] = Theme.kbd_led_colors();
 
-    let mut color_cycle: Vec<Color> = vec![];
-    (0..40).for_each(|i| {
-        let color = color_1.lerp(&color_2, i as f32 / 39.0);
-        color_cycle.push(color);
-    });
-    (0..40).for_each(|i| {
-        let color = color_2.lerp(&color_3, i as f32 / 39.0);
-        color_cycle.push(color);
-    });
-    let mut color_cycle_reversed = color_cycle.iter().rev().cloned().collect::<Vec<_>>();
-    color_cycle.append(&mut color_cycle_reversed);
+    let color_cycle = PingPongColorCycle::new(color_1, &[
+        (40, color_2),
+        (20, color_3),
+    ]);
 
     let initial_state = (color_cycle, None);
     effect_fn_buf(initial_state, Duration::from_millis(1), |(colors, started_at), _ctx, buf| {
@@ -182,7 +178,7 @@ pub fn led_kbd_border() -> Effect {
 
         let color = |pos: Position| -> Color {
             let idx = (raw_color_idx + (pos.x / 2 + pos.y * 3 / 2) as u32) as usize;
-            colors[idx % colors.len()]
+            colors.color_at(idx).clone()
         };
 
         area.positions().for_each(|pos| {

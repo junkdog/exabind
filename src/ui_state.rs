@@ -1,5 +1,4 @@
 use crate::app::KeyMapContext;
-use crate::buffer::blit_buffer;
 use crate::fx::effect::outline_border;
 use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
 use crate::widget::{supplant_key_code, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, KeyboardWidget, ShortcutsWidgetState};
@@ -9,7 +8,7 @@ use ratatui::layout::{Offset, Rect, Size};
 use ratatui::style::{Modifier, Style, Stylize};
 use ratatui::widgets::{Block, Clear, Widget};
 use std::collections::HashMap;
-use tachyonfx::{ref_count, BufferRenderer, Duration, Effect, RefCount, Shader};
+use tachyonfx::{blit_buffer, ref_count, BufferRenderer, Duration, Effect, RefCount, Shader};
 use crate::fx::EffectStage;
 
 pub struct UiState {
