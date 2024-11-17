@@ -1,5 +1,6 @@
-use crate::fx::effect::starting_up;
 use crate::exabind_event::ExabindEvent;
+use crate::fx::effect::starting_up;
+use crate::fx::{effect, EffectStage};
 use crate::input::InputProcessor;
 use crate::keymap::KeyMap;
 use crate::shortcut::Shortcut;
@@ -9,11 +10,10 @@ use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
 use crossterm::event::ModifierKeyCode::{LeftAlt, LeftControl, LeftMeta, LeftShift};
 use crossterm::event::{KeyCode, ModifierKeyCode};
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Rect, Size};
+use ratatui::layout::Rect;
 use std::sync::mpsc::Sender;
 use std::time::Instant;
-use tachyonfx::{Duration, Effect, Interpolation, Shader};
-use crate::fx::{effect, EffectStage};
+use tachyonfx::{Duration, Effect, Shader};
 
 pub struct ExabindApp {
     running: bool,
@@ -276,12 +276,10 @@ impl ExabindApp {
     fn update_selected_category(&mut self, ui_state: &mut UiState) {
         self.stateful_widgets.update_shortcut_category(&self.keymap_context, ui_state);
 
-        let title_row = self.stateful_widgets.selected_category_area(&self.keymap_context)
-            .rows()
-            .next()
-            .unwrap();
+        let widget = self.stateful_widgets
+            .selected_category_widget(&self.keymap_context);
 
-        let fx = effect::fill_bartilt((1300, Interpolation::CubicInOut)).with_area(title_row);
+        let fx = effect::selected_category(widget.border_color(), widget.area());
 
         self.stage_mut().add_unique_effect("selected_category", fx);
     }

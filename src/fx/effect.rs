@@ -6,29 +6,66 @@ use ratatui::layout::{Margin, Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use std::time::Instant;
 use tachyonfx::fx::{never_complete, parallel, prolong_start, sequence};
-use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, Interpolatable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
+use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolatable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 use tachyonfx::fx::Direction::{DownToUp, UpToDown};
 use tachyonfx::Interpolation::Linear;
-use crate::color_cycle::PingPongColorCycle;
+use crate::color_cycle::{PingPongColorCycle, RepeatingColorCycle};
 
-pub fn fill_bartilt<T: Into<EffectTimer>>(timer: T) -> Effect {
-    let rng = SimpleRng::default();
-    let fill = fx::effect_fn((), timer, move |_state, ctx, cells| {
-        cells
-            .enumerate()
-            .filter(|(_, (_, cell))| cell.symbol() == "▔")
-            .for_each(|(idx, (_, cell))| {
-                match idx % 2 {
-                    0 => cell.set_char('◤'),
-                    1 => cell.set_char('◢'),
-                    _ => unreachable!(),
-                };
-                let s = cell.style();
-                cell.set_style(s.add_modifier(Modifier::REVERSED));
-            });
+pub fn selected_category(
+    base_color: Color,
+    area: Rect,
+) -> Effect {
+
+    let color_step: usize = 10;
+
+    let (h, s, l) = base_color.to_hsl();
+
+    let color_l = Color::from_hsl(h, s, 80.0);
+    let color_d = Color::from_hsl(h, s, 40.0);
+
+    let color_cycle = RepeatingColorCycle::new(base_color, &[
+        (5,          color_d),
+        (4,          color_l),
+        (2,          Color::from_hsl((h - 20.0) % 360.0, s, (l + 20.0).min(100.0))),
+        (color_step, Color::from_hsl(h, (s - 30.0).max(0.0), (l + 20.0).min(100.0))),
+        (color_step, Color::from_hsl((h + 20.0) % 360.0, s, (l + 20.0).min(100.0))),
+        (color_step, Color::from_hsl(h, (s + 30.0).max(0.0), (l + 20.0).min(100.0))),
+    ]);
+
+    let effect = fx::effect_fn_buf(Instant::now(), u32::MAX, move |started_at, ctx, buf| {
+        let elapsed = started_at.elapsed().as_secs_f32();
+
+        // speed n cells/s
+        let idx = (elapsed * 30.0) as usize;
+
+        let area = ctx.area;
+
+        let mut update_cell = |(x, y): (u16, u16), idx: usize| {
+            let cell = &mut buf[(x, y)];
+            cell.set_fg(color_cycle.color_at(idx).clone());
+        };
+
+        (area.x..area.right()).enumerate().for_each(|(i, x)| {
+            update_cell((x, area.y), idx + i);
+        });
+
+        let cell_idx_offset = area.width as usize;
+        (area.y + 1..area.bottom() - 1).enumerate().for_each(|(i, y)| {
+            update_cell((area.right() - 1, y), idx + i + cell_idx_offset);
+        });
+
+        let cell_idx_offset = cell_idx_offset + area.height.saturating_sub(2) as usize;
+        (area.x..area.right()).rev().enumerate().for_each(|(i, x)| {
+            update_cell((x, area.bottom() - 1), idx + i + cell_idx_offset);
+        });
+
+        let cell_idx_offset = cell_idx_offset + area.width as usize;
+        (area.y + 1..area.bottom()).rev().enumerate().for_each(|(i, y)| {
+            update_cell((area.x, y), idx + i + cell_idx_offset);
+        });
     });
 
-    never_complete(fill)
+    effect.with_area(area)
 }
 
 pub fn animate_in_all_categories(
