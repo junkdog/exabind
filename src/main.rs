@@ -110,7 +110,7 @@ fn main() -> io::Result<()> {
 
     ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout::default());
     ui_state.register_kbd_effect(starting_up());
-    ui_state.render_selection_outline(app.keymap_context());
+    // ui_state.render_selection_outline(app.keymap_context());
 
     let animate_category_widgets = animate_in_all_categories(app.stateful_widgets().category_widgets());
     app.stage_mut().add_effect(animate_category_widgets);

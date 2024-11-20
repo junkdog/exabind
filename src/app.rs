@@ -1,5 +1,5 @@
 use crate::exabind_event::ExabindEvent;
-use crate::fx::effect::starting_up;
+use crate::fx::effect::{outline_selected_category_key_caps, starting_up};
 use crate::fx::{effect, EffectStage};
 use crate::input::InputProcessor;
 use crate::keymap::KeyMap;
@@ -255,7 +255,13 @@ impl ExabindApp {
                 ui_state.update_active_modifiers(self.keymap_context.current_modifier_keys());
             },
             CategoryWidgetNavigationOrder(_) => {
-                ui_state.render_selection_outline(self.keymap_context())
+                // todo: register two-part unique-locked key_cap_outline effect
+                // ui_state.render_selection_outline(self.keymap_context())
+                // ui_state.register_kbd_effect()
+                let size = ui_state.kbd_size();
+                let stage = ui_state.kbd_effects_mut();
+                let fx = outline_selected_category_key_caps(stage, self.keymap_context(), size);
+                stage.add_effect(fx);
             },
             OpenCategoryFxSandbox => {
                 let widget = self.stateful_widgets.selected_category_widget(&self.keymap_context);

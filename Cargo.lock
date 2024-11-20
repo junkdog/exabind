@@ -971,9 +971,9 @@ dependencies = [
 
 [[package]]
 name = "tachyonfx"
-version = "0.9.2"
+version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c9c1ba26087e30974a1103b0cb78a3d9c9d4791d40abba3bf54fc5ae82512e4"
+checksum = "a7bb70be127291790236fd45169b17a3be4aeb1902c8691f23fd02f49d174b7b"
 dependencies = [
  "bon",
  "colorsys",

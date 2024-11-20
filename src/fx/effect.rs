@@ -1,15 +1,23 @@
+use std::cell::Cell;
+use std::sync::mpsc::Sender;
 use crate::styling::{Catppuccin, ExabindTheme, Theme, CATPPUCCIN};
 use crate::widget::{draw_key_border, render_border_with, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, ShortcutsWidget};
 use bit_set::BitSet;
 use crossterm::event::KeyCode;
-use ratatui::layout::{Margin, Position, Rect};
+use ratatui::layout::{Margin, Position, Rect, Size};
 use ratatui::style::{Color, Modifier, Style};
 use std::time::Instant;
-use tachyonfx::fx::{never_complete, parallel, prolong_start, sequence};
+use ratatui::prelude::Buffer;
+use tachyonfx::fx::{effect_fn_buf, fade_from, fade_from_fg, never_complete, parallel, prolong_start, sequence, sweep_in, Direction};
 use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolatable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 use tachyonfx::fx::Direction::{DownToUp, UpToDown};
 use tachyonfx::Interpolation::Linear;
+use crate::app::KeyMapContext;
 use crate::color_cycle::{PingPongColorCycle, RepeatingColorCycle};
+use crate::dispatcher::Dispatcher;
+use crate::exabind_event::ExabindEvent;
+use crate::fx::EffectStage;
+use crate::fx::key_cap_outline::KeyCapOutline;
 
 pub fn selected_category(
     base_color: Color,
@@ -231,117 +239,38 @@ pub fn led_kbd_border() -> Effect {
 
 }
 
-pub fn outline_border(key_caps: &[KeyCap], border_style: Style) -> Effect {
-    use tachyonfx::fx::*;
 
-    let key_caps = key_caps.iter().map(|k| k.clone()).collect::<Vec<_>>();
-    effect_fn_buf((), Duration::from_millis(1), move |_state, ctx, buf| {
-        let key_caps = key_caps.clone();
-
-        let area = buf.area.clone();
-        area.positions().for_each(|pos| {
-            buf.cell_mut(pos).map(|c| c.skip = true);
-        });
-
-        let area_width = buf.area.right() as isize;
-        let cell_bits = buf.area.bottom() as isize * area_width;
-        let mut key_cap_cells = BitSet::with_capacity(cell_bits as usize);
-        render_border_with(&key_caps, buf, move |d, pos, cell| {
-            draw_key_border(d, cell);
-            cell.set_style(border_style);
-            cell.skip = false;
-        });
-
-        key_caps.iter()
-            .map(|k| k.area)
-            .flat_map(|a| a.positions())
-            .for_each(|pos| {
-                let idx = index_of_pos(area, pos);
-                key_cap_cells.insert(idx);
-            });
-
-        let neighbors = |pos| -> [bool; 4] {
-            let mut neighbors = [false; 4];
-            let idx = index_of_pos(area, pos) as isize;
-
-            let is_set = |idx: isize| -> bool {
-                idx >= 0 && key_cap_cells.contains(idx as usize)
-            };
-
-            if pos.x > 0 && pos.x > area.left() {
-                neighbors[0] = is_set(idx - area_width - 1);
-                neighbors[2] = is_set(idx + area_width - 1);
-            }
-            if pos.x < (area.right() - 1) as _ {
-                neighbors[1] = is_set(idx - area_width + 1);
-                neighbors[3] = is_set(idx + area_width + 1);
-            }
-
-            neighbors
-        };
-
-        area.positions().for_each(|pos| {
-            let mut cell = &mut buf[pos];
-
-            match (cell.symbol(), neighbors(pos)) {
-                (ch, [true, true, true, true]) if !"│ ".contains(ch) => {
-                    // fkey and number rows have adjacent borders, so we need to
-                    // make sure to not clear the border between them...
-                    if (2..=3).contains(&pos.y) {
-                        cell.skip = false;
-                        cell.set_char('─');
-                    } else {
-                        cell.skip = true;
-                        cell.set_char('X');
-                    }
-                },
-                ("╨", [true, true, _, _]) => {
-                    cell.skip = false;
-                    cell.set_char('─');
-                },
-                ("╥", [_, _, true, true]) => {
-                    cell.skip = false;
-                    cell.set_char('─');
-                },
-                ("┬", [true, true, true, false]) => {
-                    cell.skip = false;
-                    cell.set_char('┌');
-                },
-                ("┬", [true, true, false, true]) => {
-                    cell.skip = false;
-                    cell.set_char('┐');
-                },
-                ("┴", [true, false, true, true]) => {
-                    cell.skip = false;
-                    cell.set_char('└');
-                },
-                ("┴", [false, true, true, true]) => {
-                    cell.skip = false;
-                    cell.set_char('┘');
-                },
-                ("┤", [true, false, true, false]) => {
-                    cell.skip = false;
-                    cell.set_char('│');
-                },
-                ("├", [false, true, false, true]) => {
-                    cell.skip = false;
-                    cell.set_char('│');
-                },
-                ("╫", [true, false, true, true])  => {
-                    cell.skip = false;
-                    cell.set_char('└');
-                },
-                ("╫", [false, true, true, true]) => {
-                    cell.skip = false;
-                    cell.set_char('┘');
-                },
-                _ => {
-                    // cell.skip = false;
-                }
-            }
-        });
-    })
+/// dispatches `event` over 1ms
+pub fn dispatch_event<T: Clone + 'static>(
+    sender: Sender<T>,
+    event: T
+) -> Effect {
+    effect_fn_buf((), 1, move |_, _, _| sender.dispatch(event.clone()))
 }
+
+pub fn outline_selected_category_key_caps(
+    stage: &mut EffectStage,
+    context: &KeyMapContext,
+    buffer_size: Size,
+) -> Effect {
+    let buf = Buffer::empty(Rect::from((Position::default(), buffer_size)));
+    let outline = KeyCapOutline::new(buf, context).into_effect();
+
+    let color = Theme.kbd_cap_outline_category(context.sorted_category_idx())
+        .fg
+        .expect("fg color");
+
+    let keycap_outline = CellFilter::FgColor(color);
+
+    let fx = parallel(&[
+        outline,
+        never_complete(sweep_in(Direction::UpToDown, 10, 30, CATPPUCCIN.crust, (350, Interpolation::QuadOut)))
+            .with_cell_selection(keycap_outline),
+    ]);
+
+    stage.unique("key_cap_outline", fx)
+}
+
 
 fn draw_single_border(key_cap: KeyCap, duration: Duration) -> Effect {
     use tachyonfx::fx::*;
@@ -368,9 +297,3 @@ fn is_box_drawing(c: char) -> bool {
     ('\u{2500}'..='\u{257F}').contains(&c)
 }
 
-const fn index_of_pos(area: Rect, position: Position) -> usize {
-    let y = (position.y - area.y) as usize;
-    let x = (position.x - area.x) as usize;
-    let width = area.width as usize;
-    y * width + x
-}

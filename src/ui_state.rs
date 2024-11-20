@@ -1,5 +1,4 @@
 use crate::app::KeyMapContext;
-use crate::fx::effect::outline_border;
 use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
 use crate::widget::{supplant_key_code, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, KeyboardWidget, ShortcutsWidgetState};
 use crossterm::event::KeyCode;
@@ -81,6 +80,7 @@ impl UiState {
         let mut buf = self.kbd.buf_work.borrow_mut();
         let area = buf.area.clone();
 
+        // todo: outline
         self.kbd.effects.process_effects(elapsed, &mut buf, area);
 
         KeyboardWidget::new_with_style(
@@ -88,6 +88,10 @@ impl UiState {
             Style::default().fg(CATPPUCCIN.peach).bg(CATPPUCCIN.surface0).add_modifier(Modifier::BOLD),
             None,
         ).render(area, &mut buf);
+    }
+
+    pub fn kbd_effects_mut(&mut self) -> &mut EffectStage {
+        &mut self.kbd.effects
     }
 
     pub fn register_kbd_effect(&mut self, effect: Effect) {
@@ -105,56 +109,57 @@ impl UiState {
             .render_buffer(Offset::default(), &mut buf);
 
         if self.kbd.buf_shortcuts_visible {
-            blit_buffer(&self.kbd.buf_shortcuts.borrow(), &mut buf, Offset::default());
+            self.kbd.buf_shortcuts.borrow()
+                .render_buffer(Offset::default(), &mut buf);
         }
     }
 
-    pub fn render_selection_outline(
-        &mut self,
-        context: &KeyMapContext,
-    ) {
-        let style = Theme.kbd_cap_outline_category(context.sorted_category_idx());
-        let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
-            .key_cap_lookup();
-
-        let keys_to_outline: Vec<KeyCap> = context.filtered_actions()
-            .iter()
-            .filter(|action| action.enabled_in_ui())
-            .map(|action| action.shortcut())
-            .flat_map(|shortcut| shortcut.keystroke())
-            .filter_map(|key_code| key_caps.get(&supplant_key_code(key_code.clone())))
-            .map(|key_cap| key_cap.clone())
-            .collect();
-
-        self.update_selected_shortcuts_outline(&keys_to_outline, style);
-    }
-
-    fn update_selected_shortcuts_outline(
-        &mut self,
-        shortcuts: &[KeyCap],
-        border_style: Style,
-    ) {
-        let mut buf = self.kbd.buf_shortcuts.borrow_mut();
-        let area = buf.area.clone();
-        Clear.render(area, &mut buf);
-
-        let mut key_caps: Vec<KeyCap> = shortcuts.iter()
-            .map(|s| s.clone())
-            .collect();
-
-
-        let keycap_sort_value = |key_cap: &KeyCap| -> u32 {
-            let a = key_cap.area;
-            let width = area.width as u32;
-            a.x as u32 + (a.y as u32 * width)
-        };
-
-        key_caps.sort_by(|a, b| keycap_sort_value(a).cmp(&keycap_sort_value(b)));
-        key_caps.dedup();
-
-        outline_border(&key_caps, border_style)
-            .process(Duration::from_millis(17), &mut buf, area);
-    }
+    // pub fn render_selection_outline(
+    //     &mut self,
+    //     context: &KeyMapContext,
+    // ) {
+    //     let style = Theme.kbd_cap_outline_category(context.sorted_category_idx());
+    //     let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
+    //         .key_cap_lookup();
+    //
+    //     let keys_to_outline: Vec<KeyCap> = context.filtered_actions()
+    //         .iter()
+    //         .filter(|action| action.enabled_in_ui())
+    //         .map(|action| action.shortcut())
+    //         .flat_map(|shortcut| shortcut.keystroke())
+    //         .filter_map(|key_code| key_caps.get(&supplant_key_code(key_code.clone())))
+    //         .map(|key_cap| key_cap.clone())
+    //         .collect();
+    //
+    //     self.update_selected_shortcuts_outline(&keys_to_outline, style);
+    // }
+    //
+    // fn update_selected_shortcuts_outline(
+    //     &mut self,
+    //     shortcuts: &[KeyCap],
+    //     border_style: Style,
+    // ) {
+    //     let mut buf = self.kbd.buf_shortcuts.borrow_mut();
+    //     let area = buf.area.clone();
+    //     Clear.render(area, &mut buf);
+    //
+    //     let mut key_caps: Vec<KeyCap> = shortcuts.iter()
+    //         .map(|s| s.clone())
+    //         .collect();
+    //
+    //
+    //     let keycap_sort_value = |key_cap: &KeyCap| -> u32 {
+    //         let a = key_cap.area;
+    //         let width = area.width as u32;
+    //         a.x as u32 + (a.y as u32 * width)
+    //     };
+    //
+    //     key_caps.sort_by(|a, b| keycap_sort_value(a).cmp(&keycap_sort_value(b)));
+    //     key_caps.dedup();
+    //
+    //     outline_key_cap_borders(&key_caps, border_style)
+    //         .process(Duration::from_millis(17), &mut buf, area);
+    // }
 
     pub fn toggle_highlight_shortcuts(&mut self) {
         self.kbd.buf_shortcuts_visible = !self.kbd.buf_shortcuts_visible;
