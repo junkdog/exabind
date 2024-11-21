@@ -112,7 +112,8 @@ fn main() -> io::Result<()> {
     ui_state.register_kbd_effect(starting_up());
     // ui_state.render_selection_outline(app.keymap_context());
 
-    let animate_category_widgets = animate_in_all_categories(app.stateful_widgets().category_widgets());
+    let widgets = app.stateful_widgets().category_widgets();
+    let animate_category_widgets = animate_in_all_categories(app.sender(), widgets);
     app.stage_mut().add_effect(animate_category_widgets);
 
     while app.is_running() {

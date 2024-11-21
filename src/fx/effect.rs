@@ -8,7 +8,7 @@ use ratatui::layout::{Margin, Position, Rect, Size};
 use ratatui::style::{Color, Modifier, Style};
 use std::time::Instant;
 use ratatui::prelude::Buffer;
-use tachyonfx::fx::{effect_fn_buf, fade_from, fade_from_fg, never_complete, parallel, prolong_start, sequence, sweep_in, Direction};
+use tachyonfx::fx::{effect_fn_buf, fade_from, fade_from_fg, never_complete, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
 use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolatable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 use tachyonfx::fx::Direction::{DownToUp, UpToDown};
 use tachyonfx::Interpolation::Linear;
@@ -78,6 +78,7 @@ pub fn selected_category(
 }
 
 pub fn animate_in_all_categories(
+    sender: Sender<ExabindEvent>,
     widgets: &[ShortcutsWidget]
 ) -> Effect {
     let mut rng = SimpleRng::default();
@@ -86,17 +87,19 @@ pub fn animate_in_all_categories(
     let effects = widgets.iter().map(|w| {
         let delay = Duration::from_millis(rng.gen_range(0..max_open_category_delay));
         let bg_color = w.bg_color();
-        let border_color = w.border_color();
         let area = w.area();
-        prolong_start(delay, open_category(bg_color, border_color, area))
+        prolong_start(delay, open_category(bg_color, area))
     }).collect::<Vec<_>>();
 
-    fx::prolong_start(300, parallel(&effects))
+    sequence(&[
+        prolong_start(300, parallel(&effects)),
+        sleep(500),
+        dispatch_event(sender, ExabindEvent::AutoSelectNextCategory),
+    ])
 }
 
 pub fn open_category(
     bg_color: Color,
-    border_color: Color,
     area: Rect,
 ) -> Effect {
     use tachyonfx::{fx::*, Interpolation::*};
@@ -150,6 +153,7 @@ pub fn key_press<C: Into<Color>>(
     ]).with_area(key.area)
 }
 
+// note: never-ending effect
 pub fn starting_up() -> Effect {
     let kbd = AnsiKeyboardTklLayout::default();
     let esc_area = kbd.key_area(KeyCode::Enter);
@@ -256,7 +260,7 @@ pub fn outline_selected_category_key_caps(
     let buf = Buffer::empty(Rect::from((Position::default(), buffer_size)));
     let outline = KeyCapOutline::new(buf, context).into_effect();
 
-    let color = Theme.kbd_cap_outline_category(context.sorted_category_idx())
+    let color = Theme.kbd_cap_outline_category(context.sorted_category_idx().expect("no category selected"))
         .fg
         .expect("fg color");
 
@@ -264,7 +268,7 @@ pub fn outline_selected_category_key_caps(
 
     let fx = parallel(&[
         outline,
-        never_complete(sweep_in(Direction::UpToDown, 10, 30, CATPPUCCIN.crust, (350, Interpolation::QuadOut)))
+        sweep_in(Direction::UpToDown, 40, 40, CATPPUCCIN.crust, (350, Interpolation::QuadIn))
             .with_cell_selection(keycap_outline),
     ]);
 

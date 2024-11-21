@@ -37,10 +37,11 @@ impl InputProcessor {
         match event.code {
             Char('q')     => Some(ExabindEvent::Shutdown),
             Char('h')     => Some(ExabindEvent::ToggleHighlightShortcuts),
-            Char('a')     => Some(ExabindEvent::OpenCategoryFxSandbox),
+            Char('a')     => Some(ExabindEvent::SelectedCategoryFxSandbox),
             Char('s')     => Some(ExabindEvent::StartupAnimation),
             Up            => Some(ExabindEvent::PreviousCategory),
             Down          => Some(ExabindEvent::NextCategory),
+            Esc           => Some(ExabindEvent::DeselectCategory),
             Modifier(mfc) => Some(ExabindEvent::ToggleFilterKey(mfc)),
             Char('1')     => Some(ExabindEvent::ToggleFilterKey(LeftShift)),
             Char('2')     => Some(ExabindEvent::ToggleFilterKey(LeftControl)),

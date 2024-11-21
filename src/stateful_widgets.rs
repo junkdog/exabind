@@ -82,13 +82,13 @@ impl StatefulWidgets {
         self.shortcuts = shortcuts.into_iter().map(|(_, w)| w).collect();
     }
 
-    pub fn selected_category_area(&self, keymap_context: &KeyMapContext) -> Rect {
-        let idx = keymap_context.category_idx();
-        self.shortcuts[idx].area()
-    }
+    // pub fn selected_category_area(&self, keymap_context: &KeyMapContext) -> Rect {
+    //     let idx = keymap_context.category_idx().expect("no category selected");
+    //     self.shortcuts[idx].area()
+    // }
 
     pub fn selected_category_widget(&self, keymap_context: &KeyMapContext) -> &ShortcutsWidget {
-        let idx = keymap_context.category_idx();
+        let idx = keymap_context.category_idx().expect("no category selected");
         &self.shortcuts[idx]
     }
 

@@ -20,7 +20,7 @@ impl KeyCapOutline {
         buffer: Buffer,
         context: &KeyMapContext,
     ) -> Self {
-        let style = Theme.kbd_cap_outline_category(context.sorted_category_idx());
+        let style = Theme.kbd_cap_outline_category(context.sorted_category_idx().expect("no category selected"));
         let mut buffer = buffer;
         Self::update_shortcuts_outline(&mut buffer, context.filtered_actions(), style);
 

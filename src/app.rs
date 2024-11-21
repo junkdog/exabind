@@ -10,10 +10,13 @@ use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
 use crossterm::event::ModifierKeyCode::{LeftAlt, LeftControl, LeftMeta, LeftShift};
 use crossterm::event::{KeyCode, ModifierKeyCode};
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Margin, Rect};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
-use tachyonfx::{Duration, Effect, Shader};
+use tachyonfx::{fx, CellFilter, Duration, Effect, Interpolation, IntoEffect, Shader};
+use tachyonfx::fx::{consume_tick, Glitch};
+use crate::dispatcher::Dispatcher;
+use crate::styling::CATPPUCCIN;
 
 pub struct ExabindApp {
     running: bool,
@@ -30,7 +33,7 @@ pub struct KeyMapContext {
     pub keymap: KeyMap,
     categories: Vec<(String, usize)>,
     ordered_categories: Vec<usize>,
-    current_category: usize,
+    current_category: Option<usize>,
     pub current_action: Option<usize>,
     pub filter_key_control: bool,
     pub filter_key_alt: bool,
@@ -52,35 +55,43 @@ impl KeyMapContext {
         self.categories.iter().map(|(cat, _)| cat.as_str()).collect()
     }
 
+    pub fn deselect_category(&mut self) {
+        self.current_category = None;
+        self.current_action = None;
+    }
+
     pub fn next_category(&mut self) {
-        if self.current_category == self.categories.len() - 1 {
-            self.current_category = 0;
-        } else {
-            self.current_category += 1;
+        let last_index = self.categories.len() - 1;
+        match self.current_category {
+            None                           => self.current_category = Some(0),
+            Some(idx) if last_index == idx => self.current_category = Some(0),
+            Some(idx)                      => self.current_category = Some(idx + 1)
         }
+
         self.current_action = None;
     }
 
     pub fn previous_category(&mut self) {
-        if self.current_category == 0 {
-            self.current_category = self.categories.len() - 1;
-        } else {
-            self.current_category -= 1;
+        match self.current_category {
+            None      => self.current_category = Some(0),
+            Some(0)   => self.current_category = Some(self.categories.len() - 1),
+            Some(idx) => self.current_category = Some(idx - 1),
         }
         self.current_action = None;
     }
 
-    pub fn category(&self) -> &str {
-        let category_idx = self.ordered_categories[self.current_category];
-        self.categories[category_idx].0.as_str()
+    pub fn category(&self) -> Option<&str> {
+        let idx = self.current_category?;
+        let category_idx = self.ordered_categories[idx];
+        Some(self.categories[category_idx].0.as_str())
     }
 
-    pub fn category_idx(&self) -> usize {
+    pub fn category_idx(&self) -> Option<usize> {
         self.current_category
     }
 
-    pub fn sorted_category_idx(&self) -> usize {
-        self.ordered_categories[self.current_category]
+    pub fn sorted_category_idx(&self) -> Option<usize> {
+        Some(self.ordered_categories[self.current_category?])
     }
 
     pub fn current_modifier_keys(&self) -> Vec<KeyCap> {
@@ -119,7 +130,10 @@ impl KeyMapContext {
     }
 
     pub fn filtered_actions(&self) -> Vec<BoundShortcut> {
-        self.filtered_actions_by_category(self.category()).1
+        match self.category() {
+            Some(category) => self.filtered_actions_by_category(category).1,
+            None           => Vec::new(),
+        }
     }
 
     pub fn filtered_actions_by_category(&self, category: &str) -> (usize, Vec<BoundShortcut>) {
@@ -168,7 +182,7 @@ impl ExabindApp {
         let keymap_context = KeyMapContext {
             categories,
             ordered_categories: (0..last_index).collect(),
-            current_category: 0,
+            current_category: None,
             current_action: None,
             filter_key_control: false,
             filter_key_alt: false,
@@ -240,6 +254,18 @@ impl ExabindApp {
             ToggleHighlightShortcuts  => ui_state.toggle_highlight_shortcuts(),
             StartupAnimation          => ui_state.register_kbd_effect(starting_up()),
             ActivateUiElement(el)     => self.input_processor.change_input(el),
+            AutoSelectNextCategory    => {
+                if self.keymap_context.category().is_none() {
+                    self.dispatch(NextCategory)
+                }
+            },
+            DeselectCategory          => {
+                self.keymap_context.deselect_category();
+                self.stage_mut()
+                    .add_unique_effect("selected_category", consume_tick());
+                ui_state.kbd_effects_mut()
+                    .add_unique_effect("key_cap_outline", consume_tick());
+            },
             NextCategory              => {
                 self.keymap_context.next_category();
                 self.update_selected_category(ui_state);
@@ -260,15 +286,17 @@ impl ExabindApp {
                 // ui_state.register_kbd_effect()
                 let size = ui_state.kbd_size();
                 let stage = ui_state.kbd_effects_mut();
-                let fx = outline_selected_category_key_caps(stage, self.keymap_context(), size);
-                stage.add_effect(fx);
+                if self.keymap_context.current_category.is_some() {
+                    let fx = outline_selected_category_key_caps(stage, self.keymap_context(), size);
+                    stage.add_effect(fx);
+                }
             },
-            OpenCategoryFxSandbox => {
+            SelectedCategoryFxSandbox => {
                 let widget = self.stateful_widgets.selected_category_widget(&self.keymap_context);
                 let area = widget.area();
-                let fx = effect::open_category(widget.bg_color(), widget.border_color(), area);
+                let fx = effect::open_category(widget.bg_color(), area);
                 self.register_effect(fx);
-            },
+            }
             // NextShortcut => self.stateful_widgets
             //     .shortcuts_window
             //     .select_next_shortcut(),
@@ -285,7 +313,14 @@ impl ExabindApp {
         let widget = self.stateful_widgets
             .selected_category_widget(&self.keymap_context);
 
-        let fx = effect::selected_category(widget.border_color(), widget.area());
+        let area = widget.area();
+        let color = widget.border_color();
+        let fx = fx::parallel(&[
+            effect::selected_category(color, area),
+            fx::fade_from_fg(color, (200, Interpolation::BounceInOut))
+                .with_area(area)
+                .with_cell_selection(CellFilter::Outer(Margin::new(1, 1))),
+        ]) ;
 
         self.stage_mut().add_unique_effect("selected_category", fx);
     }
@@ -310,5 +345,11 @@ impl BoundShortcut {
 
     pub fn shortcut(&self) -> &Shortcut {
         &self.shortcut
+    }
+}
+
+impl Dispatcher<ExabindEvent> for ExabindApp {
+    fn dispatch(&self, event: ExabindEvent) {
+        self.sender().dispatch(event)
     }
 }
