@@ -1,4 +1,3 @@
-use crate::app::KeyMapContext;
 use crate::color_cycle::{ColorCycle, IndexResolver, PingPongColorCycle, RepeatingColorCycle, RepeatingCycle};
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
@@ -16,6 +15,14 @@ use std::time::Instant;
 use tachyonfx::fx::Direction::UpToDown;
 use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
 use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
+use crate::app::KeyMapContext;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub enum UniqueEffectId {
+    #[default]
+    SelectedCategory,
+    KeyCapOutline,
+}
 
 /// Creates an animated border effect for the selected category using color cycling.
 ///
@@ -306,7 +313,7 @@ pub fn dispatch_event<T: Clone + Send + 'static>(
 /// # Returns
 /// A unique Effect that outlines and animates relevant key caps.
 pub fn outline_selected_category_key_caps(
-    stage: &mut EffectStage,
+    stage: &mut EffectStage<UniqueEffectId>,
     context: &KeyMapContext,
     buffer_size: Size,
 ) -> Effect {
@@ -328,7 +335,7 @@ pub fn outline_selected_category_key_caps(
         ]).with_cell_selection(keycap_outline),
     ]);
 
-    stage.unique("key_cap_outline", fx)
+    stage.unique(UniqueEffectId::KeyCapOutline, fx)
 }
 
 
@@ -386,3 +393,4 @@ fn select_category_color_cycle(
         (color_step, Color::from_hsl(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0))),
     ])
 }
+

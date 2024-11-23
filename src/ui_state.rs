@@ -6,6 +6,7 @@ use ratatui::layout::{Offset, Rect, Size};
 use ratatui::style::{Modifier, Style, Stylize};
 use ratatui::widgets::{Block, Widget};
 use tachyonfx::{ref_count, BufferRenderer, Duration, Effect, RefCount};
+use crate::fx::effect::UniqueEffectId;
 
 /// Represents the overall UI state of the application, managing the screen dimensions,
 /// keyboard state, and shortcuts widget state.
@@ -28,7 +29,7 @@ struct KeyboardState {
     buf_shortcuts: RefCount<Buffer>,
     /// Effect stage for keyboard animations and visual effects
     /// Note: Must be processed before the main buffer effect stage
-    effects: EffectStage,
+    effects: EffectStage<UniqueEffectId>,
     /// Currently active modifier keys
     active_modifiers: Vec<KeyCap>,
     /// Current offset for keyboard rendering position
@@ -92,7 +93,7 @@ impl UiState {
 
     pub fn apply_kbd_effects(&mut self, elapsed: Duration) {
         // copy base buffer to work buffer
-        self.update_kbd_buffer();
+        self.update_kbd_work_buffer();
 
         let mut work_buf = self.kbd.buf_work.borrow_mut();
         let area = work_buf.area;
@@ -109,7 +110,7 @@ impl UiState {
     }
 
     /// Returns a mutable reference to the keyboard effects stage.
-    pub fn kbd_effects_mut(&mut self) -> &mut EffectStage {
+    pub fn kbd_effects_mut(&mut self) -> &mut EffectStage<UniqueEffectId> {
         &mut self.kbd.effects
     }
 
@@ -130,7 +131,7 @@ impl UiState {
     ///
     /// This is an internal method used to prepare the work buffer for
     /// applying effects and modifications.
-    fn update_kbd_buffer(&mut self) {
+    fn update_kbd_work_buffer(&mut self) {
         let mut buf = self.kbd.buf_work.borrow_mut();
         self.kbd.buf_base.borrow()
             .render_buffer(Offset::default(), &mut buf);

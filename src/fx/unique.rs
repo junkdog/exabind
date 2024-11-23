@@ -6,20 +6,20 @@ use tachyonfx::{CellFilter, Duration, Effect, EffectTimer, RefCount, Shader};
 pub type InstanceId = u32;
 
 #[derive(Clone)]
-pub struct Unique {
-    id_context: RefCount<UniqueContext>,
+pub struct Unique<K: Clone> {
+    id_context: RefCount<UniqueContext<K>>,
     instance_id: InstanceId,
     fx: Effect,
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct UniqueContext {
-    pub key: String,
+pub(super) struct UniqueContext<K: Clone> {
+    pub key: K,
     pub instance_id: InstanceId,
 }
 
-impl UniqueContext {
-    pub fn new(key: impl Into<String>, instance_id: InstanceId) -> Self {
+impl<K: Clone> UniqueContext<K> {
+    pub fn new(key: impl Into<K>, instance_id: InstanceId) -> Self {
         Self {
             key: key.into(),
             instance_id,
@@ -27,8 +27,8 @@ impl UniqueContext {
     }
 }
 
-impl Unique {
-    pub fn new(id_context: RefCount<UniqueContext>, fx: Effect) -> Self {
+impl<K: Clone> Unique<K> {
+    pub fn new(id_context: RefCount<UniqueContext<K>>, fx: Effect) -> Self {
         let instance_id = id_context.borrow().deref().instance_id;
         Self {
             id_context,
@@ -38,7 +38,7 @@ impl Unique {
     }
 }
 
-impl Shader for Unique {
+impl<K: Clone + 'static> Shader for Unique<K> {
     fn name(&self) -> &'static str {
         "unique"
     }

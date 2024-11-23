@@ -1,6 +1,6 @@
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
-use crate::fx::effect::{outline_selected_category_key_caps, starting_up};
+use crate::fx::effect::{outline_selected_category_key_caps, starting_up, UniqueEffectId};
 use crate::fx::{effect, EffectStage};
 use crate::input::InputProcessor;
 use crate::keymap::KeyMap;
@@ -23,10 +23,9 @@ pub struct ExabindApp {
     sender: Sender<ExabindEvent>,
     last_tick: Instant,
     input_processor: InputProcessor,
-    effects: EffectStage,
+    effects: EffectStage<UniqueEffectId>,
     stateful_widgets: StatefulWidgets,
 }
-
 
 pub struct KeyMapContext {
     pub keymap: KeyMap,
@@ -213,7 +212,7 @@ impl ExabindApp {
         self.effects.add_effect(effect);
     }
 
-    pub fn stage_mut(&mut self) -> &mut EffectStage {
+    pub fn stage_mut(&mut self) -> &mut EffectStage<UniqueEffectId> {
         &mut self.effects
     }
 
@@ -259,9 +258,9 @@ impl ExabindApp {
             DeselectCategory          => {
                 self.keymap_context.deselect_category();
                 self.stage_mut()
-                    .add_unique_effect("selected_category", consume_tick());
+                    .add_unique_effect(UniqueEffectId::SelectedCategory, consume_tick());
                 ui_state.kbd_effects_mut()
-                    .add_unique_effect("key_cap_outline", consume_tick());
+                    .add_unique_effect(UniqueEffectId::KeyCapOutline, consume_tick());
             },
             NextCategory              => {
                 self.keymap_context.next_category();
@@ -316,7 +315,7 @@ impl ExabindApp {
                 .with_cell_selection(CellFilter::Outer(Margin::new(1, 1))),
         ]) ;
 
-        self.stage_mut().add_unique_effect("selected_category", fx);
+        self.stage_mut().add_unique_effect(UniqueEffectId::SelectedCategory, fx);
     }
 }
 

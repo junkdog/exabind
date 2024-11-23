@@ -11,13 +11,13 @@ use tachyonfx::{ref_count, Duration, Effect, IntoEffect, RefCount, Shader, Simpl
 /// Regular effects run until completion, while unique effects can be cancelled when a new effect
 /// with the same identifier is added.
 #[derive(Default)]
-pub struct EffectStage {
+pub struct EffectStage<K: Clone + Ord + 'static> {
     effects: Vec<Effect>,
-    uniques: BTreeMap<String, RefCount<UniqueContext>>,
+    uniques: BTreeMap<K, RefCount<UniqueContext<K>>>,
     rng: SimpleRng,
 }
 
-impl EffectStage {
+impl<K: Clone + Ord> EffectStage<K> {
     /// Creates a unique effect that will cancel any existing effect with the same key.
     /// The effect must be added to the stage using [`add_effect`] to be processed.
     ///
@@ -32,7 +32,7 @@ impl EffectStage {
     /// # Returns
     /// A new effect that includes unique identification logic. The effect must still be added
     /// to the stage to be processed.
-    pub fn unique(&mut self, key: impl Into<String>, fx: Effect) -> Effect {
+    pub fn unique(&mut self, key: impl Into<K>, fx: Effect) -> Effect {
         let key = key.into();
         let ctx = self.uniques.entry(key.clone())
             .and_modify(|ctx| ctx.borrow_mut().instance_id = self.rng.gen())
@@ -61,7 +61,7 @@ impl EffectStage {
     /// * `key` - A unique identifier for the effect. If an effect with this key already exists,
     ///           the existing effect will be cancelled.
     /// * `fx` - The effect to be wrapped with unique identification and added to the stage.
-    pub fn add_unique_effect(&mut self, key: impl Into<String>, fx: Effect) {
+    pub fn add_unique_effect(&mut self, key: impl Into<K>, fx: Effect) {
         let fx = self.unique(key, fx);
         self.add_effect(fx);
     }
