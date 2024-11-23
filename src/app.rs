@@ -278,9 +278,6 @@ impl ExabindApp {
                 ui_state.update_active_modifiers(self.keymap_context.current_modifier_keys());
             },
             CategoryWidgetNavigationOrder(_) => {
-                // todo: register two-part unique-locked key_cap_outline effect
-                // ui_state.render_selection_outline(self.keymap_context())
-                // ui_state.register_kbd_effect()
                 let size = ui_state.kbd_size();
                 let stage = ui_state.kbd_effects_mut();
                 if self.keymap_context.current_category.is_some() {

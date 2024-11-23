@@ -17,6 +17,14 @@ use tachyonfx::fx::Direction::UpToDown;
 use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
 use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 
+/// Creates an animated border effect for the selected category using color cycling.
+///
+/// # Arguments
+/// * `base_color` - The primary color to base the cycling effect on
+/// * `area` - The rectangular area where the effect should be rendered
+///
+/// # Returns
+/// An Effect that animates a border around the specified area using cycled colors
 pub fn selected_category(
     base_color: Color,
     area: Rect,
@@ -58,6 +66,17 @@ pub fn selected_category(
     effect.with_area(area)
 }
 
+/// Animates the opening of all category widgets with staggered timing.
+///
+/// # Arguments
+/// * `sender` - Channel for dispatching [ExabindEvent]s
+/// * `widgets` - Slice of [ShortcutsWidget]s to animate
+///
+/// # Returns
+/// An Effect that:
+/// 1. Opens all categories with randomized delays
+/// 2. Waits for a short period
+/// 3. Triggers category selection
 pub fn open_all_categories(
     sender: Sender<ExabindEvent>,
     widgets: &[ShortcutsWidget]
@@ -79,6 +98,17 @@ pub fn open_all_categories(
     ])
 }
 
+/// Creates an opening animation effect for a single category widget.
+///
+/// # Arguments
+/// * `bg_color` - Background color for the category
+/// * `area` - Rectangular area of the category widget
+///
+/// # Returns
+/// A parallel Effect combining:
+/// - Background slide-in effect
+/// - Content sweep-in animation
+/// - Border coalescing effect
 pub fn open_category(
     bg_color: Color,
     area: Rect,
@@ -93,18 +123,24 @@ pub fn open_category(
     let content_cells = CellFilter::Inner(Margin::new(1, 1));
 
     parallel(&[
-        sequence(&[
-            // prolong_start(timer, fade_from_fg(bg_color, timer_c))
-            prolong_start(timer, sweep_in(UpToDown, area.height, 0, bg_color, timer))
-                .with_cell_selection(content_cells.clone()),
-        ]),
-        // prolong_start(timer, fade_from_fg(bg_color, timer_c))
+        prolong_start(timer, sweep_in(UpToDown, area.height, 0, bg_color, timer))
+            .with_cell_selection(content_cells.clone()),
         prolong_start(timer, coalesce(timer_c))
             .with_cell_selection(border_cells),
+        // plays out first, but must come last to not be overridden by the above effects
         slide_in(UpToDown, area.height * 2, 0, CATPPUCCIN.crust, timer),
     ]).with_area(area)
 }
 
+/// Creates a key press animation effect.
+///
+/// # Arguments
+/// * `key_press_delay` - Delay before the key press animation starts
+/// * `key` - The KeyCap representing the pressed key
+/// * `color` - Color for the key press effect
+///
+/// # Returns
+/// An Effect that animates both the key border and key symbol
 pub fn key_press<C: Into<Color>>(
     key_press_delay: Duration,
     key: KeyCap,
@@ -114,7 +150,6 @@ pub fn key_press<C: Into<Color>>(
 
     // border
     let key_borders = CellFilter::Outer(Margin::new(1, 1));
-    let key_pad = CellFilter::Inner(Margin::new(0, 0));
 
     let c = color.into();
     let bg = Catppuccin::new().crust;
@@ -134,7 +169,13 @@ pub fn key_press<C: Into<Color>>(
     ]).with_area(key.area)
 }
 
-// note: never-ending effect
+/// Creates the initial startup animation sequence.
+///
+/// Types out "exabind" with randomized delays between characters,
+/// followed by an Enter key press and persistent keyboard LED effects.
+///
+/// # Returns
+/// A never-ending Effect combining the startup sequence and LED animations.
 pub fn starting_up() -> Effect {
     let kbd = AnsiKeyboardTklLayout;
     let esc_area = kbd.key_area(KeyCode::Enter);
@@ -169,6 +210,19 @@ pub fn starting_up() -> Effect {
     fx::parallel(&effects)
 }
 
+/// Creates a color cycling effect for cell foregrounds.
+///
+/// # Arguments
+/// * `colors` - ColorCycle instance defining the color sequence
+/// * `step_duration` - Duration in milliseconds between color steps
+/// * `predicate` - Function determining which cells should be affected
+///
+/// # Type Parameters
+/// * `I` - Color index resolver type
+/// * `P` - Predicate function type
+///
+/// # Returns
+/// An Effect that cycles colors on cells matching the predicate.
 pub fn color_cycle_fg<I, P>(
     colors: ColorCycle<I>,
     step_duration: u32,
@@ -202,10 +256,14 @@ pub fn color_cycle_fg<I, P>(
     })
 }
 
-
+/// Creates an animated LED border effect for the keyboard.
+///
+/// Uses the theme's LED colors in a ping-pong pattern, affecting
+/// all key symbols.
+///
+/// # Returns
+/// A persistent Effect that animates the keyboard border lights.
 pub fn led_kbd_border() -> Effect {
-    
-
     let [color_1, color_2, color_3] = Theme.kbd_led_colors();
 
     let color_cycle = PingPongColorCycle::new(color_1, &[
@@ -220,14 +278,35 @@ pub fn led_kbd_border() -> Effect {
 }
 
 
-/// dispatches `event` over 1ms
-pub fn dispatch_event<T: Clone + 'static>(
+/// Creates an effect that dispatches an event as soon as it starts.
+///
+/// # Type Parameters
+/// * `T` - Event type that implements Clone and 'static
+///
+/// # Arguments
+/// * `sender` - Channel for sending the event
+/// * `event` - Event to be dispatched
+///
+/// # Returns
+/// An Effect that dispatches the specified event.
+pub fn dispatch_event<T: Clone + Send + 'static>(
     sender: Sender<T>,
     event: T
 ) -> Effect {
-    effect_fn_buf((), 1, move |_, _, _| sender.dispatch(event.clone()))
+    effect_fn_buf(Some(event), 1, move |e, _, _| {
+        e.take().map(|e| sender.dispatch(e));
+    })
 }
 
+/// Creates an effect highlighting keyboard keys relevant to the selected category.
+///
+/// # Arguments
+/// * `stage` - Effect stage for managing the animation
+/// * `context` - Current keymap context
+/// * `buffer_size` - Size of the rendering buffer
+///
+/// # Returns
+/// A unique Effect that outlines and animates relevant key caps.
 pub fn outline_selected_category_key_caps(
     stage: &mut EffectStage,
     context: &KeyMapContext,
@@ -280,6 +359,14 @@ fn is_box_drawing(c: char) -> bool {
     ('\u{2500}'..='\u{257F}').contains(&c)
 }
 
+/// Creates a repeating color cycle based on a base color.
+///
+/// # Arguments
+/// * `base_color` - Primary color to derive the cycle from
+/// * `length_multiplier` - Factor to adjust the cycle length
+///
+/// # Returns
+/// A ColorCycle instance with derived colors and adjusted steps.
 fn select_category_color_cycle(
     base_color: Color,
     length_multiplier: usize

@@ -105,15 +105,13 @@ fn main() -> io::Result<()> {
             | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
         )
     )?;
-    // let mut tui = Tui::new(init_crossterm()?, events);
 
     ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout);
     ui_state.register_kbd_effect(starting_up());
-    // ui_state.render_selection_outline(app.keymap_context());
 
     let widgets = app.stateful_widgets().category_widgets();
-    let animate_category_widgets = open_all_categories(app.sender(), widgets);
-    app.stage_mut().add_effect(animate_category_widgets);
+    let open_categories_fx = open_all_categories(app.sender(), widgets);
+    app.stage_mut().add_effect(open_categories_fx);
 
     while app.is_running() {
         let elapsed = app.update_time();
@@ -123,7 +121,7 @@ fn main() -> io::Result<()> {
 
         tui.draw(|f| {
             ui_state.apply_kbd_effects(elapsed);
-            ui(f, app.stateful_widgets(), app.keymap_context(), &mut ui_state);
+            ui(f, app.stateful_widgets(), &mut ui_state);
             effects(elapsed, &mut app, f);
         })?;
     }
@@ -137,14 +135,12 @@ fn effects(
     f: &mut Frame<'_>,
 ) {
     let area = f.area();
-    let buf = f.buffer_mut();
-    app.process_effects(elapsed, buf, area);
+    app.process_effects(elapsed, f.buffer_mut(), area);
 }
 
 fn ui(
     f: &mut Frame<'_>,
     stateful_widgets: &StatefulWidgets,
-    keymap_context: &KeyMapContext,
     ui_state: &mut ui_state::UiState
 ) {
     ui_state.screen = f.area().as_size();
