@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use tachyonfx::{CellFilter, CellIterator, Duration, Effect, EffectTimer, RefCount, Shader};
+use tachyonfx::{CellFilter, Duration, Effect, EffectTimer, RefCount, Shader};
 
 pub type InstanceId = u32;
 

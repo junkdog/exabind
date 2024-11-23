@@ -21,12 +21,11 @@ use crate::app::KeyMapContext;
 use crate::fx::effect::{open_all_categories, starting_up};
 use crate::event_handler::EventHandler;
 use crate::keymap::IntoKeyMap;
-use crate::parser::jetbrains::JetbrainsKeymapSource;
 use crate::parser::kde::parse_kglobalshortcuts;
 use crate::stateful_widgets::StatefulWidgets;
 use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
 use crate::tui::Tui;
-use crate::widget::{AnsiKeyboardTklLayout, KeyboardLayout, ShortcutsWidget};
+use crate::widget::{AnsiKeyboardTklLayout, ShortcutsWidget};
 use ::crossterm::event::{KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 use ::crossterm::execute;
 use ::crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
@@ -40,7 +39,7 @@ use ratatui::Terminal;
 use std::io;
 use std::io::{stdout, Stdout};
 use std::path::PathBuf;
-use tachyonfx::{CenteredShrink, Duration, Shader};
+use tachyonfx::{Duration, Shader};
 
 fn shortcut_widget(context: &KeyMapContext, category: &str) -> ShortcutsWidget {
     let (category_idx, actions) = context.filtered_actions_by_category(category);
@@ -87,7 +86,7 @@ fn init_crossterm() -> io::Result<Terminal<CrosstermBackend<Stdout>>> {
 }
 
 fn main() -> io::Result<()> {
-    let mut events = EventHandler::new(std::time::Duration::from_millis(33));
+    let events = EventHandler::new(std::time::Duration::from_millis(33));
     // let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
     // let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
     let keymap = PathBuf::from("test/kglobalshortcutsrc")
@@ -108,7 +107,7 @@ fn main() -> io::Result<()> {
     )?;
     // let mut tui = Tui::new(init_crossterm()?, events);
 
-    ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout::default());
+    ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout);
     ui_state.register_kbd_effect(starting_up());
     // ui_state.render_selection_outline(app.keymap_context());
 
@@ -137,7 +136,7 @@ fn effects(
     app: &mut ExabindApp,
     f: &mut Frame<'_>,
 ) {
-    let area = f.area().clone();
+    let area = f.area();
     let buf = f.buffer_mut();
     app.process_effects(elapsed, buf, area);
 }

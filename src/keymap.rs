@@ -85,7 +85,7 @@ impl KeyMap {
 
 impl Display for KeyMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let format = |action: &Action| format!("\t{}", action.to_string());
+        let format = |action: &Action| format!("\t{}", action);
         let actions = self.actions().map(format).collect::<Vec<_>>().join("\n");
         write!(f, "keymap name={}:\n{}", self.name, actions)
     }

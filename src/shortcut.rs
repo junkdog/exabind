@@ -50,7 +50,7 @@ impl Shortcut {
             .filter(|m| modifiers.contains(m))
             .map(KeyCode::Modifier);
 
-        let keystroke = modifier_key_codes.chain(keystroke.into_iter()).collect();
+        let keystroke = modifier_key_codes.chain(keystroke).collect();
 
         Self {
             keystroke

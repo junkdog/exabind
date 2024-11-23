@@ -5,7 +5,7 @@ use anpa::combinators::{attempt, many, many_to_vec, middle, no_separator, right,
 use anpa::core::{parse, ParserExt, StrParser};
 use anpa::{create_parser, or, right, tuplify, variadic};
 use anpa::parsers::{item_while, skip, until};
-use crossterm::event::{KeyCode, MediaKeyCode, ModifierKeyCode};
+use crossterm::event::{KeyCode, MediaKeyCode};
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
@@ -165,7 +165,7 @@ mod line {
 // keystroke parsers
 mod keys {
     use super::*;
-    use std::ascii::AsciiExt;
+    
 
     fn shortcut_keystroke<'a>() -> impl StrParser<'a, Shortcut> {
         many_to_vec(key_code(), true, separator(or!(skip('+')), false))

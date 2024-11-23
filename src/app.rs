@@ -42,11 +42,8 @@ pub struct KeyMapContext {
 
 impl KeyMapContext {
     pub fn apply_event(&mut self, event: &ExabindEvent) {
-        match event {
-            ExabindEvent::CategoryWidgetNavigationOrder(order) => {
-                self.ordered_categories = order.clone();
-            },
-            _ => (),
+        if let ExabindEvent::CategoryWidgetNavigationOrder(order) = event {
+            self.ordered_categories = order.clone();
         }
     }
 
@@ -94,7 +91,7 @@ impl KeyMapContext {
     }
 
     pub fn current_modifier_keys(&self) -> Vec<KeyCap> {
-       let layout = AnsiKeyboardTklLayout::default()
+       let layout = AnsiKeyboardTklLayout
            .layout();
 
 
@@ -161,10 +158,10 @@ impl KeyMapContext {
             .iter()
             .flat_map(|action| {
                 action.shortcuts()
-                    .into_iter()
+                    .iter()
                     .map(|shortcut| BoundShortcut {
                         label: action.name().to_string(),
-                        enabled_in_ui: uses_active_modifier_keys(&shortcut),
+                        enabled_in_ui: uses_active_modifier_keys(shortcut),
                         shortcut: shortcut.clone(),
                     })
             })
@@ -236,7 +233,7 @@ impl ExabindApp {
         let now = Instant::now();
         let last_frame_duration: Duration = now.duration_since(self.last_tick).into();
         self.last_tick = now;
-        last_frame_duration.into()
+        last_frame_duration
     }
 
     pub fn process_effects(&mut self, last_frame_duration: Duration, buf: &mut Buffer, area: Rect) {

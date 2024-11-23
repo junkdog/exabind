@@ -22,13 +22,10 @@ impl InputProcessor {
     }
 
     pub fn apply(&self, event: &ExabindEvent) {
-        match event {
-            ExabindEvent::KeyPress(event) => {
-                if let Some(e) = Self::resolve_key_pressed(event) {
-                    self.sender.dispatch(e);
-                }
+        if let ExabindEvent::KeyPress(event) = event {
+            if let Some(e) = Self::resolve_key_pressed(event) {
+                self.sender.dispatch(e);
             }
-            _ => {}
         }
     }
 

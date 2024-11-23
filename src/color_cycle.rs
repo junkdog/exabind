@@ -2,7 +2,7 @@ use ratatui::prelude::Color;
 use tachyonfx::Interpolatable;
 
 pub trait IndexResolver<T: Clone> {
-    fn resolve<'a>(idx: usize, data: &'a[T]) -> &'a T;
+    fn resolve(idx: usize, data: &[T]) -> &T;
 }
 
 #[derive(Clone, Debug)]
@@ -46,10 +46,10 @@ impl<T> ColorCycle<T> where T: IndexResolver<Color> {
         let mut gradient = vec![initial_color];
         colors.iter().fold((0, initial_color), |(_, prev_color), (len, color)| {
             (0..=*len).for_each(|i| {
-                let color = prev_color.lerp(&color, i as f32 / *len as f32);
+                let color = prev_color.lerp(color, i as f32 / *len as f32);
                 gradient.push(color);
             });
-            gradient.push(color.clone());
+            gradient.push(*color);
             (*len, *color)
         });
 

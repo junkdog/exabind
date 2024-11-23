@@ -1,5 +1,4 @@
 use crate::styling::{Catppuccin, ExabindTheme, Theme};
-use crossterm::event::KeyCode::{Delete, Insert};
 use crossterm::event::{KeyCode, ModifierKeyCode};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Alignment, Margin, Rect, Size};
@@ -85,12 +84,12 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
 
         let fn_key_x = |n: u8| -> u16 {
             // F1 aligns with '2', but n is not zero-indexed, so we align it with '1'
-            let start = (KEY_W - 1);
+            let start = KEY_W - 1;
 
             // group gap is ~3
             let group_gap = 2 * (((n as u16 - 1) / 4));
 
-            return start + group_gap + n as u16 * (KEY_W - 1);
+            start + group_gap + n as u16 * (KEY_W - 1)
         };
 
         let key_offset = |n: u16| -> u16 { n * (KEY_W - 1) };
@@ -208,13 +207,13 @@ pub fn render_border_with<F>(
 
         // draw key border, left
         let (x, y) = (area.x, area.y);
-        draw_border('┌', x, y + 0);
+        draw_border('┌', x, y);
         draw_border('│', x, y + 1);
         draw_border('└', x, y + 2);
 
         // draw key border, right
         let (x, y) = (area.x + area.width - 1, area.y);
-        draw_border('┐', x, y + 0);
+        draw_border('┐', x, y);
         draw_border('│', x, y + 1);
         draw_border('┘', x, y + 2);
 
@@ -228,7 +227,7 @@ pub fn render_border_with<F>(
 
         // draw top and bottom borders
         for x in area.x + 1..area.x + area.width - 1 {
-            draw_horizontal_border(x, area.y + 0);
+            draw_horizontal_border(x, area.y);
             draw_horizontal_border(x, area.y + KEY_H - 1);
         }
     }
@@ -245,9 +244,9 @@ pub fn render_border(
     });
 }
 
-impl Into<KeyCap> for (KeyCode, Rect) {
-    fn into(self) -> KeyCap {
-        KeyCap::new(self.0, self.1)
+impl From<(KeyCode, Rect)> for KeyCap {
+    fn from(val: (KeyCode, Rect)) -> Self {
+        KeyCap::new(val.0, val.1)
     }
 }
 

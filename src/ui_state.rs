@@ -55,7 +55,7 @@ impl UiState {
     pub fn reset_kbd_buffer<K: KeyboardLayout>(&self, kbd: K) {
         let mut buf = self.kbd.buf_base.borrow_mut();
 
-        let area = buf.area.clone();
+        let area = buf.area;
         Block::default()
             .style(Theme.kbd_surface())
             .render(area, &mut buf);
@@ -73,7 +73,7 @@ impl UiState {
         self.update_kbd_buffer();
 
         let mut buf = self.kbd.buf_work.borrow_mut();
-        let area = buf.area.clone();
+        let area = buf.area;
 
         self.kbd.effects.process_effects(elapsed, &mut buf, area);
 

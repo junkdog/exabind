@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use crate::parser::xml::{xml_parser, XmlTag};
 use crate::shortcut::{Action, Shortcut};
-use anpa::core::{parse, StrParser};
-use std::fmt::Display;
+use anpa::core::parse;
 use std::io::Read;
 use std::path::PathBuf;
 use itertools::Itertools;
@@ -187,7 +186,7 @@ mod parser {
             .map(as_keycode)
     }
 
-    pub(super) fn parse_keycodes<'a>(input: &'a str) -> Vec<KeyCode> {
+    pub(super) fn parse_keycodes(input: &str) -> Vec<KeyCode> {
         let p = many_to_vec(eat(keycode_parser()), true, no_separator());
         parse(p, input).result.unwrap()
     }
@@ -198,7 +197,7 @@ fn as_shortcut(keyboard_shortcut_node: &XmlTag<'_>) -> Shortcut {
 
     let keystroke = keyboard_shortcut_node
         .attribute("first-keystroke")
-        .map(|s| parser::parse_keycodes(&s))
+        .map(parser::parse_keycodes)
         .unwrap_or_default();
 
     Shortcut::new(keystroke)

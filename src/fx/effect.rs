@@ -14,8 +14,7 @@ use ratatui::style::{Color, Style};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
 use tachyonfx::fx::Direction::UpToDown;
-use tachyonfx::fx::{effect_fn_buf, fade_from, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
-use tachyonfx::Interpolation::Linear;
+use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
 use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 
 pub fn selected_category(
@@ -33,9 +32,7 @@ pub fn selected_category(
         let area = ctx.area;
 
         let mut update_cell = |(x, y): (u16, u16), idx: usize| {
-            buf.cell_mut((x, y)).map(|cell| {
-                cell.set_fg(color_cycle.color_at(idx).clone());
-            });
+            if let Some(cell) = buf.cell_mut((x, y)) { cell.set_fg(*color_cycle.color_at(idx)); }
         };
 
         (area.x..area.right()).enumerate().for_each(|(i, x)| {
@@ -139,7 +136,7 @@ pub fn key_press<C: Into<Color>>(
 
 // note: never-ending effect
 pub fn starting_up() -> Effect {
-    let kbd = AnsiKeyboardTklLayout::default();
+    let kbd = AnsiKeyboardTklLayout;
     let esc_area = kbd.key_area(KeyCode::Enter);
 
     let mut effects = vec![];
@@ -180,7 +177,7 @@ pub fn color_cycle_fg<I, P>(
     I: IndexResolver<Color> + Clone + Send + 'static,
     P: Fn(&Cell) -> bool + 'static
 {
-    use tachyonfx::{fx::*, CellFilter::*};
+    use tachyonfx::fx::*;
 
     let duration = Duration::from_millis(u32::MAX);
     effect_fn((colors, None), duration, move |(colors, started_at), _ctx, cell_iter| {
@@ -193,7 +190,7 @@ pub fn color_cycle_fg<I, P>(
 
         let color = |pos: Position| -> Color {
             let idx = (raw_color_idx + (pos.x / 2 + pos.y * 3 / 2) as u32) as usize;
-            colors.color_at(idx).clone()
+            *colors.color_at(idx)
         };
 
         cell_iter
@@ -207,7 +204,7 @@ pub fn color_cycle_fg<I, P>(
 
 
 pub fn led_kbd_border() -> Effect {
-    use tachyonfx::CellFilter::*;
+    
 
     let [color_1, color_2, color_3] = Theme.kbd_led_colors();
 
@@ -294,13 +291,13 @@ fn select_category_color_cycle(
     let color_l = Color::from_hsl(h, s, 80.0);
     let color_d = Color::from_hsl(h, s, 40.0);
 
-    let color_cycle = RepeatingColorCycle::new(base_color, &[
+    
+    RepeatingColorCycle::new(base_color, &[
         (4 * length_multiplier, color_d),
         (2 * length_multiplier, color_l),
         (4 * length_multiplier, Color::from_hsl((h - 25.0) % 360.0, s, (l + 10.0).min(100.0))),
         (color_step, Color::from_hsl(h, (s - 20.0).max(0.0), (l + 10.0).min(100.0))),
         (color_step, Color::from_hsl((h + 25.0) % 360.0, s, (l + 10.0).min(100.0))),
         (color_step, Color::from_hsl(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0))),
-    ]);
-    color_cycle
+    ])
 }

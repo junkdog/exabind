@@ -41,7 +41,6 @@ impl StatefulWidgets {
         let kbd = ui_state.kbd_size();
         let mut shortcuts: Vec<(usize, ShortcutsWidget)> = shortcut_widgets(keymap_context).into_iter()
             .enumerate()
-            .map(|(idx, w)| (idx, w))
             .collect();
 
         let mut rects_to_place: GroupedRectsToPlace<usize, ()> = GroupedRectsToPlace::new();
@@ -52,7 +51,7 @@ impl StatefulWidgets {
         for (idx, w) in &mut shortcuts {
             let a = w.area();
             rects_to_place.push_rect(
-                idx.clone(),
+                *idx,
                 None,
                 RectToInsert::new((a.width + 1) as _, a.height as _, 1) // +1 for padding
             )
@@ -105,7 +104,7 @@ impl StatefulWidgets {
                 .collect::<Vec<_>>()
         };
 
-        let mut pack_rects_fn = |screen: Rect| {
+        let pack_rects_fn = |screen: Rect| {
             let mut target_bins = BTreeMap::new();
             target_bins.insert("main", TargetBin::new(screen.width as _, screen.height as _, 1));
 

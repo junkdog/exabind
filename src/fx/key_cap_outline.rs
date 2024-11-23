@@ -49,7 +49,7 @@ impl Shader for KeyCapOutline {
     }
 
     fn area(&self) -> Option<Rect> {
-        Some(self.buffer.area().clone())
+        Some(*self.buffer.area())
     }
 
     fn set_area(&mut self, _area: Rect) {
@@ -67,7 +67,7 @@ impl KeyCapOutline {
         shortcuts: Vec<BoundShortcut>,
         style: Style,
     ) {
-        let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout::default()
+        let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout
             .key_cap_lookup();
 
         let keys_to_outline: Vec<KeyCap> = shortcuts
@@ -75,23 +75,20 @@ impl KeyCapOutline {
             .filter(|action| action.enabled_in_ui())
             .map(|action| action.shortcut())
             .flat_map(|shortcut| shortcut.keystroke())
-            .filter_map(|key_code| key_caps.get(&supplant_key_code(key_code.clone())))
-            .map(|key_cap| key_cap.clone())
+            .filter_map(|key_code| key_caps.get(&supplant_key_code(*key_code))).cloned()
             .collect();
 
 
-        let mut key_caps: Vec<KeyCap> = keys_to_outline.iter()
-            .map(|s| s.clone())
-            .collect();
+        let mut key_caps: Vec<KeyCap> = keys_to_outline.to_vec();
 
-        let area = buf.area.clone();
+        let area = buf.area;
         let keycap_cmp = |key_cap: &KeyCap| -> u32 {
             let a = key_cap.area;
             let width = area.width as u32;
             a.x as u32 + (a.y as u32 * width)
         };
 
-        key_caps.sort_by(|a, b| keycap_cmp(a).cmp(&keycap_cmp(b)));
+        key_caps.sort_by_key(keycap_cmp);
         key_caps.dedup();
 
         outline_key_cap_borders(&key_caps, style)
@@ -103,11 +100,11 @@ impl KeyCapOutline {
 fn outline_key_cap_borders(key_caps: &[KeyCap], border_style: Style) -> Effect {
     use tachyonfx::fx::*;
 
-    let key_caps = key_caps.iter().map(|k| k.clone()).collect::<Vec<_>>();
+    let key_caps = key_caps.to_vec();
     effect_fn_buf((), Duration::from_millis(1), move |_state, ctx, buf| {
         let key_caps = key_caps.clone();
 
-        let area = buf.area.clone();
+        let area = buf.area;
         area.positions().for_each(|pos| {
             buf.cell_mut(pos).map(|c| c.skip = true);
         });
@@ -150,7 +147,7 @@ fn outline_key_cap_borders(key_caps: &[KeyCap], border_style: Style) -> Effect {
         };
 
         area.positions().for_each(|pos| {
-            let mut cell = &mut buf[pos];
+            let cell = &mut buf[pos];
 
             match (cell.symbol(), neighbors(pos)) {
                 (ch, [true, true, true, true]) if !"│ ".contains(ch) => {

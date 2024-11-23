@@ -1,4 +1,3 @@
-use std::fmt::format;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
@@ -30,7 +29,7 @@ impl StatefulWidget for ShortcutCategoriesWidget {
             .max()
             .unwrap_or(0);
 
-        let mut area = area.clone();
+        let mut area = area;
         area.width = 1 + max_width as u16;
 
         List::new(categories)

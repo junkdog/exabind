@@ -73,7 +73,7 @@ impl ShortcutsWidget {
         let table = Table::new(rows(&shortcuts, action_name_style, keystroke_style), constraints)
             .block(Block::bordered()
                 .border_set(SHORTCUT_SET_2)
-                .title(Span::styled(title2.clone(), border_style.clone()
+                .title(Span::styled(title2.clone(), border_style
                     .bg(bg_color)
                     .add_modifier(Modifier::BOLD)
                     .add_modifier(Modifier::REVERSED)))
@@ -200,13 +200,13 @@ impl StatefulWidgetRef for ShortcutsWidget {
 
     fn render_ref(&self, _area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let translated_area: Rect = self.area();
-        let translated_area = translated_area.intersection(buf.area().clone());
+        let translated_area = translated_area.intersection(*buf.area());
 
         Clear.render(translated_area, buf);
 
         StatefulWidgetRef::render_ref(&self.table, translated_area, buf, &mut state.table_state);
 
-        let border_south = translated_area.rows().last().unwrap_or_else(|| return Default::default());
+        let border_south = translated_area.rows().last().unwrap_or_default();
         for xy in border_south.positions() {
             if let Some(c) = buf.cell_mut(xy) {
                 let style = c.style();

@@ -1,5 +1,5 @@
 use crate::parser::core::eat;
-use anpa::combinators::{left, many, many_to_vec, middle, no_separator, not_empty, right, succeed};
+use anpa::combinators::{left, many, many_to_vec, middle, no_separator, right, succeed};
 use anpa::core::{ParserExt, StrParser};
 use anpa::parsers::{item_if, item_while, skip, until};
 use anpa::{create_parser, defer_parser, left, or, right, skip, tuplify, variadic};
@@ -49,7 +49,7 @@ impl XmlTag<'_> {
     pub(super) fn children(&self) -> &[XmlTag<'_>] {
         static EMPTY: [XmlTag; 0] = [];
         match &self.content {
-            Some(NodeContent::Tags(children)) => &children,
+            Some(NodeContent::Tags(children)) => children,
             _                                 => &EMPTY,
         }
     }
