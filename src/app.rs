@@ -251,11 +251,11 @@ impl ExabindApp {
             KeyPress(_)               => self.input_processor.apply(&event),
             StartupAnimation          => ui_state.register_kbd_effect(starting_up()),
             ActivateUiElement(el)     => self.input_processor.change_input(el),
-            AutoSelectNextCategory    => {
+            AutoSelectCategory => {
                 if self.keymap_context.category().is_none() {
                     self.dispatch(NextCategory)
                 }
-            },
+            }
             DeselectCategory          => {
                 self.keymap_context.deselect_category();
                 self.stage_mut()

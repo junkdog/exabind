@@ -9,7 +9,7 @@ pub enum ExabindEvent {
     KeyPress(KeyEvent),
     StartupAnimation,
     SelectedCategoryFxSandbox,
-    AutoSelectNextCategory,
+    AutoSelectCategory,
     DeselectCategory,
     NextShortcut,
     PreviousShortcut,

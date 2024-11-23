@@ -84,17 +84,15 @@ pub fn open_all_categories(
     let mut rng = SimpleRng::default();
 
     let max_open_category_delay = 150 * widgets.len() as u32;
-    let effects = widgets.iter().map(|w| {
+    let open_categories_fx = widgets.iter().map(|w| {
         let delay = Duration::from_millis(rng.gen_range(0..max_open_category_delay));
-        let bg_color = w.bg_color();
-        let area = w.area();
-        prolong_start(delay, open_category(bg_color, area))
+        prolong_start(delay, open_category(w.bg_color(), w.area()))
     }).collect::<Vec<_>>();
 
     sequence(&[
-        prolong_start(300, parallel(&effects)),
+        prolong_start(300, parallel(&open_categories_fx)),
         sleep(500),
-        dispatch_event(sender, ExabindEvent::AutoSelectNextCategory),
+        dispatch_event(sender, ExabindEvent::AutoSelectCategory),
     ])
 }
 
