@@ -1,44 +1,28 @@
-use std::cell::Cell;
-use std::sync::mpsc::Sender;
-use crate::styling::{Catppuccin, ExabindTheme, Theme, CATPPUCCIN};
-use crate::widget::{draw_key_border, render_border_with, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, ShortcutsWidget};
-use bit_set::BitSet;
-use crossterm::event::KeyCode;
-use ratatui::layout::{Margin, Position, Rect, Size};
-use ratatui::style::{Color, Modifier, Style};
-use std::time::Instant;
-use ratatui::prelude::Buffer;
-use tachyonfx::fx::{effect_fn_buf, fade_from, fade_from_fg, never_complete, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
-use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolatable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
-use tachyonfx::fx::Direction::{DownToUp, UpToDown};
-use tachyonfx::Interpolation::Linear;
 use crate::app::KeyMapContext;
-use crate::color_cycle::{PingPongColorCycle, RepeatingColorCycle};
+use crate::color_cycle::{ColorCycle, IndexResolver, PingPongColorCycle, RepeatingColorCycle, RepeatingCycle};
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
-use crate::fx::EffectStage;
 use crate::fx::key_cap_outline::KeyCapOutline;
+use crate::fx::EffectStage;
+use crate::styling::{Catppuccin, ExabindTheme, Theme, CATPPUCCIN};
+use crate::widget::{draw_key_border, render_border_with, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, ShortcutsWidget};
+use crossterm::event::KeyCode;
+use ratatui::buffer::Cell;
+use ratatui::layout::{Margin, Position, Rect, Size};
+use ratatui::prelude::Buffer;
+use ratatui::style::{Color, Style};
+use std::sync::mpsc::Sender;
+use std::time::Instant;
+use tachyonfx::fx::Direction::UpToDown;
+use tachyonfx::fx::{effect_fn_buf, fade_from, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
+use tachyonfx::Interpolation::Linear;
+use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 
 pub fn selected_category(
     base_color: Color,
     area: Rect,
 ) -> Effect {
-
-    let color_step: usize = 10;
-
-    let (h, s, l) = base_color.to_hsl();
-
-    let color_l = Color::from_hsl(h, s, 80.0);
-    let color_d = Color::from_hsl(h, s, 40.0);
-
-    let color_cycle = RepeatingColorCycle::new(base_color, &[
-        (5,          color_d),
-        (4,          color_l),
-        (2,          Color::from_hsl((h - 20.0) % 360.0, s, (l + 20.0).min(100.0))),
-        (color_step, Color::from_hsl(h, (s - 30.0).max(0.0), (l + 20.0).min(100.0))),
-        (color_step, Color::from_hsl((h + 20.0) % 360.0, s, (l + 20.0).min(100.0))),
-        (color_step, Color::from_hsl(h, (s + 30.0).max(0.0), (l + 20.0).min(100.0))),
-    ]);
+    let color_cycle = select_category_color_cycle(base_color, 1);
 
     let effect = fx::effect_fn_buf(Instant::now(), u32::MAX, move |started_at, ctx, buf| {
         let elapsed = started_at.elapsed().as_secs_f32();
@@ -77,7 +61,7 @@ pub fn selected_category(
     effect.with_area(area)
 }
 
-pub fn animate_in_all_categories(
+pub fn open_all_categories(
     sender: Sender<ExabindEvent>,
     widgets: &[ShortcutsWidget]
 ) -> Effect {
@@ -188,25 +172,42 @@ pub fn starting_up() -> Effect {
     fx::parallel(&effects)
 }
 
-pub fn fade_in_keys() -> Effect {
+pub fn color_cycle_fg<I, P>(
+    colors: ColorCycle<I>,
+    step_duration: u32,
+    predicate: P,
+) -> Effect where
+    I: IndexResolver<Color> + Clone + Send + 'static,
+    P: Fn(&Cell) -> bool + 'static
+{
     use tachyonfx::{fx::*, CellFilter::*};
 
-    let c = Catppuccin::new();
-    let color_cap = c.surface0;
-    let color_border = c.mauve;
+    let duration = Duration::from_millis(u32::MAX);
+    effect_fn((colors, None), duration, move |(colors, started_at), _ctx, cell_iter| {
+        if started_at.is_none() {
+            *started_at = Some(Instant::now());
+        }
 
-    parallel(&[
-        prolong_start(700, never_complete(fade_to_fg(color_cap, (1500, Interpolation::SineIn))))
-            .with_cell_selection(Text),
-        never_complete(fade_to_fg(color_border, (1500, Interpolation::SineIn)))
-            .with_cell_selection(Not(Text.into())),
-    ])
+        let elapsed = started_at.as_ref().unwrap().elapsed().as_millis().max(1);
+        let raw_color_idx = elapsed as u32 / step_duration;
+
+        let color = |pos: Position| -> Color {
+            let idx = (raw_color_idx + (pos.x / 2 + pos.y * 3 / 2) as u32) as usize;
+            colors.color_at(idx).clone()
+        };
+
+        cell_iter
+            .filter(|(_, c)| predicate(c))
+            .map(|(pos, cell)| (color(pos), cell))
+            .for_each(|(color, cell)| {
+                cell.set_fg(color);
+            });
+    })
 }
 
 
-
 pub fn led_kbd_border() -> Effect {
-    use tachyonfx::{fx::*, CellFilter::*};
+    use tachyonfx::CellFilter::*;
 
     let [color_1, color_2, color_3] = Theme.kbd_led_colors();
 
@@ -215,32 +216,10 @@ pub fn led_kbd_border() -> Effect {
         (20, color_3),
     ]);
 
-    let initial_state = (color_cycle, None);
-    effect_fn_buf(initial_state, Duration::from_millis(1), |(colors, started_at), _ctx, buf| {
-        if started_at.is_none() {
-            *started_at = Some(Instant::now());
-        }
-
-        let area = buf.area.clone();
-
-        let elapsed = started_at.as_ref().unwrap().elapsed().as_millis().max(1);
-        let raw_color_idx = (elapsed / 100) as u32;
-
-        let color = |pos: Position| -> Color {
-            let idx = (raw_color_idx + (pos.x / 2 + pos.y * 3 / 2) as u32) as usize;
-            colors.color_at(idx).clone()
-        };
-
-        area.positions().for_each(|pos| {
-            let cell = buf.cell_mut(pos).unwrap();
-            if let Some(ch) = cell.symbol().chars().next() {
-                if !is_box_drawing(ch) && ch != ' ' {
-                    cell.set_fg(color(pos));
-                }
-            }
-        });
-    }).with_cell_selection(Outer(Margin::new(1, 1)))
-
+    color_cycle_fg(color_cycle, 100, |cell| {
+        let symbol = cell.symbol();
+        symbol != " " && !symbol.chars().next().map(is_box_drawing).unwrap_or(false)
+    })
 }
 
 
@@ -260,7 +239,8 @@ pub fn outline_selected_category_key_caps(
     let buf = Buffer::empty(Rect::from((Position::default(), buffer_size)));
     let outline = KeyCapOutline::new(buf, context).into_effect();
 
-    let color = Theme.kbd_cap_outline_category(context.sorted_category_idx().expect("no category selected"))
+    let color = Theme.kbd_cap_outline_category(context.sorted_category_idx()
+        .expect("selected category"))
         .fg
         .expect("fg color");
 
@@ -268,8 +248,10 @@ pub fn outline_selected_category_key_caps(
 
     let fx = parallel(&[
         outline,
-        sweep_in(Direction::UpToDown, 40, 40, CATPPUCCIN.crust, (350, Interpolation::QuadIn))
-            .with_cell_selection(keycap_outline),
+        sequence(&[
+            sweep_in(Direction::UpToDown, 40, 40, CATPPUCCIN.crust, (350, Interpolation::QuadIn)),
+            color_cycle_fg(select_category_color_cycle(color, 9), 33, |_| true),
+        ]).with_cell_selection(keycap_outline),
     ]);
 
     stage.unique("key_cap_outline", fx)
@@ -301,3 +283,24 @@ fn is_box_drawing(c: char) -> bool {
     ('\u{2500}'..='\u{257F}').contains(&c)
 }
 
+fn select_category_color_cycle(
+    base_color: Color,
+    length_multiplier: usize
+) -> ColorCycle<RepeatingCycle> {
+    let color_step: usize = 7 * length_multiplier;
+
+    let (h, s, l) = base_color.to_hsl();
+
+    let color_l = Color::from_hsl(h, s, 80.0);
+    let color_d = Color::from_hsl(h, s, 40.0);
+
+    let color_cycle = RepeatingColorCycle::new(base_color, &[
+        (4 * length_multiplier, color_d),
+        (2 * length_multiplier, color_l),
+        (4 * length_multiplier, Color::from_hsl((h - 25.0) % 360.0, s, (l + 10.0).min(100.0))),
+        (color_step, Color::from_hsl(h, (s - 20.0).max(0.0), (l + 10.0).min(100.0))),
+        (color_step, Color::from_hsl((h + 25.0) % 360.0, s, (l + 10.0).min(100.0))),
+        (color_step, Color::from_hsl(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0))),
+    ]);
+    color_cycle
+}

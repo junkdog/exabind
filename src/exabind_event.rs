@@ -7,7 +7,6 @@ pub enum ExabindEvent {
     Shutdown,
     /// A key event.
     KeyPress(KeyEvent),
-    ToggleHighlightShortcuts,
     StartupAnimation,
     SelectedCategoryFxSandbox,
     AutoSelectNextCategory,

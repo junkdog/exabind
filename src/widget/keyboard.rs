@@ -447,7 +447,7 @@ pub fn draw_key_border(
             '┐' => cell.set_char('╪'),
             '╩' => cell.set_char(current),
             '┌' => cell.set_char('├'),
-            n => cell.set_char('Y'),
+            _ => cell.set_char('Y'),
             // n => panic!("Invalid border character: {}", n),
         },
         '┌' => match current {
@@ -472,14 +472,14 @@ pub fn draw_key_border(
             '┘' => cell.set_char('┤'),
             '└' => cell.set_char('╪'),
             '╨' => cell.set_char('╫'),
-            n => cell.set_char('┐'),
+            _ => cell.set_char('┐'),
             // n => panic!("Invalid border character: {}", n),
         },
         '┘' => match current {
             ' ' => cell.set_char('┘'),
             '┌' => cell.set_char('╪'),
             '└' => cell.set_char('╨'),
-            n => cell.set_char('X'),
+            _ => cell.set_char('X'),
             // n => panic!("Invalid border character: {}", n),
         },
         '│' => match current {

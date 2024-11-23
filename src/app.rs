@@ -1,3 +1,4 @@
+use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
 use crate::fx::effect::{outline_selected_category_key_caps, starting_up};
 use crate::fx::{effect, EffectStage};
@@ -13,10 +14,8 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
-use tachyonfx::{fx, CellFilter, Duration, Effect, Interpolation, IntoEffect, Shader};
-use tachyonfx::fx::{consume_tick, Glitch};
-use crate::dispatcher::Dispatcher;
-use crate::styling::CATPPUCCIN;
+use tachyonfx::fx::consume_tick;
+use tachyonfx::{fx, CellFilter, Duration, Effect, Interpolation, Shader};
 
 pub struct ExabindApp {
     running: bool,
@@ -98,6 +97,8 @@ impl KeyMapContext {
        let layout = AnsiKeyboardTklLayout::default()
            .layout();
 
+
+        // fixme: don't do this
         let find_mod_key = |modifier_key_code| {
             layout.iter()
                 .find(|key| key.key_code == KeyCode::Modifier(modifier_key_code))
@@ -251,7 +252,6 @@ impl ExabindApp {
             Tick                      => (),
             Shutdown                  => self.running = false,
             KeyPress(_)               => self.input_processor.apply(&event),
-            ToggleHighlightShortcuts  => ui_state.toggle_highlight_shortcuts(),
             StartupAnimation          => ui_state.register_kbd_effect(starting_up()),
             ActivateUiElement(el)     => self.input_processor.change_input(el),
             AutoSelectNextCategory    => {

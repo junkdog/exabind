@@ -198,14 +198,12 @@ fn rows(
 impl StatefulWidgetRef for ShortcutsWidget {
     type State = ShortcutsWidgetState;
 
-    fn render_ref(&self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        // let translated_area: Rect = (area.as_position(), self.size).into();
+    fn render_ref(&self, _area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let translated_area: Rect = self.area();
         let translated_area = translated_area.intersection(buf.area().clone());
 
         Clear.render(translated_area, buf);
 
-        // let content_area = translated_area.inner(Margin::new(1, 1));
         StatefulWidgetRef::render_ref(&self.table, translated_area, buf, &mut state.table_state);
 
         let border_south = translated_area.rows().last().unwrap_or_else(|| return Default::default());

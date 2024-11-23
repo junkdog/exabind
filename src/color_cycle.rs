@@ -1,7 +1,7 @@
 use ratatui::prelude::Color;
 use tachyonfx::Interpolatable;
 
-trait IndexResolver<T: Clone> {
+pub trait IndexResolver<T: Clone> {
     fn resolve<'a>(idx: usize, data: &'a[T]) -> &'a T;
 }
 

@@ -1,7 +1,7 @@
-use std::sync::mpsc::Sender;
-use crossterm::event::{KeyCode, KeyEvent, ModifierKeyCode};
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::{ExabindEvent, UiElement};
+use crossterm::event::KeyEvent;
+use std::sync::mpsc::Sender;
 
 #[derive(Debug)]
 pub struct InputProcessor {
@@ -36,7 +36,6 @@ impl InputProcessor {
         use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
         match event.code {
             Char('q')     => Some(ExabindEvent::Shutdown),
-            Char('h')     => Some(ExabindEvent::ToggleHighlightShortcuts),
             Char('a')     => Some(ExabindEvent::SelectedCategoryFxSandbox),
             Char('s')     => Some(ExabindEvent::StartupAnimation),
             Up            => Some(ExabindEvent::PreviousCategory),

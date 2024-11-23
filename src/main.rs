@@ -18,7 +18,7 @@ mod color_cycle;
 use app::ExabindApp;
 
 use crate::app::KeyMapContext;
-use crate::fx::effect::{animate_in_all_categories, starting_up};
+use crate::fx::effect::{open_all_categories, starting_up};
 use crate::event_handler::EventHandler;
 use crate::keymap::IntoKeyMap;
 use crate::parser::jetbrains::JetbrainsKeymapSource;
@@ -113,7 +113,7 @@ fn main() -> io::Result<()> {
     // ui_state.render_selection_outline(app.keymap_context());
 
     let widgets = app.stateful_widgets().category_widgets();
-    let animate_category_widgets = animate_in_all_categories(app.sender(), widgets);
+    let animate_category_widgets = open_all_categories(app.sender(), widgets);
     app.stage_mut().add_effect(animate_category_widgets);
 
     while app.is_running() {
