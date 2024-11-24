@@ -39,57 +39,61 @@ use ratatui::Terminal;
 use std::io;
 use std::io::{stdout, Stdout};
 use std::path::PathBuf;
-use tachyonfx::{Duration, Shader};
+use clap::Parser;
+use tachyonfx::{Duration};
 
-fn shortcut_widget(context: &KeyMapContext, category: &str) -> ShortcutsWidget {
-    let (category_idx, actions) = context.filtered_actions_by_category(category);
-    let base_color = Theme.shortcuts_base_color(category_idx);
-
-    ShortcutsWidget::new(
-        category.to_string(),
-        Theme.shortcuts_widget_keystroke(),
-        Theme.shortcuts_widget_label(),
-        base_color,
-        actions
-    )
+/// Exabind - A keyboard shortcut visualization tool
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+pub struct Args {
+    /// Path to KDE global shortcuts file (typically ~/.config/kglobalshortcutsrc)
+    #[arg(short, long)]
+    pub shortcuts_file: Option<PathBuf>,
 }
 
-fn shortcut_widgets(context: &KeyMapContext) -> Vec<ShortcutsWidget> {
-    context.unordered_categories().iter()
-        .map(|category| shortcut_widget(context, category))
-        .collect()
-}
+pub fn parse_args() -> Result<PathBuf, String> {
+    let args = Args::parse();
 
+    // Use provided path or fall back to default
+    let shortcuts_path = args.shortcuts_file
+        .unwrap_or(PathBuf::from("~/.config/kglobalshortcutsrc"));
 
-fn set_panic_hook() {
-    let hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        ratatui::restore();
-        hook(info);
-    }));
-}
+    // Expand tilde if present
+    let expanded_path = if shortcuts_path.to_string_lossy().starts_with('~') {
+        if let Some(home) = dirs::home_dir() {
+            let path_str = shortcuts_path.to_string_lossy().replace('~', &home.to_string_lossy());
+            PathBuf::from(path_str)
+        } else {
+            return Err("Could not determine home directory".to_string());
+        }
+    } else {
+        shortcuts_path
+    };
 
+    // Verify file exists
+    if !expanded_path.exists() {
+        return Err(format!(
+            "Shortcuts file not found at: {}\nProvide path with --shortcuts-file or place file at default location",
+            expanded_path.display()
+        ));
+    }
 
-fn init_crossterm() -> io::Result<Terminal<CrosstermBackend<Stdout>>> {
-    set_panic_hook();
-    enable_raw_mode()?;
-
-    let mut stdout = stdout();
-
-    execute!(
-        stdout,
-        EnterAlternateScreen,
-        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES)
-    )?;
-    let backend = CrosstermBackend::new(stdout);
-    Terminal::new(backend)
+    Ok(expanded_path)
 }
 
 fn main() -> io::Result<()> {
+    let shortcuts_path = match parse_args() {
+        Ok(path) => path,
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    };
+
     let events = EventHandler::new(std::time::Duration::from_millis(33));
     // let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
     // let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
-    let keymap = PathBuf::from("test/kglobalshortcutsrc")
+    let keymap = shortcuts_path
         .into_keymap(parse_kglobalshortcuts);
 
     let mut ui_state = ui_state::UiState::new();
@@ -165,4 +169,49 @@ fn ui(
         .split(f.area())[1];
     use ratatui::prelude::Widget;
     // widget::ColorDemoWidget::new().render(demo_area, f.buffer_mut());
+}
+
+
+fn shortcut_widget(context: &KeyMapContext, category: &str) -> ShortcutsWidget {
+    let (category_idx, actions) = context.filtered_actions_by_category(category);
+    let base_color = Theme.shortcuts_base_color(category_idx);
+
+    ShortcutsWidget::new(
+        category.to_string(),
+        Theme.shortcuts_widget_keystroke(),
+        Theme.shortcuts_widget_label(),
+        base_color,
+        actions
+    )
+}
+
+fn shortcut_widgets(context: &KeyMapContext) -> Vec<ShortcutsWidget> {
+    context.unordered_categories().iter()
+        .map(|category| shortcut_widget(context, category))
+        .collect()
+}
+
+
+
+fn init_crossterm() -> io::Result<Terminal<CrosstermBackend<Stdout>>> {
+    set_panic_hook();
+    enable_raw_mode()?;
+
+    let mut stdout = stdout();
+
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES)
+    )?;
+    let backend = CrosstermBackend::new(stdout);
+    Terminal::new(backend)
+}
+
+fn set_panic_hook() {
+    let hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        ratatui::restore();
+        hook(info);
+    }));
 }

@@ -12,3 +12,5 @@ tachyonfx = "0.9.3"
 zip = "2.2.0"
 itertools = "0.13.0"
 rectangle-pack = "0.4.2"
+clap = { version = "4.5.19", features = ["derive"] }
+dirs = "5.0.1"
