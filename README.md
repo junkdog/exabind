@@ -2,7 +2,7 @@
 
 A TUI for viewing KDE shortcuts with an interactive keyboard layout and animated visualizations.
 
-This is a can be seen as a "tech demo" for [tachyonfx](https://github.com/junkdog/tachyonfx). 
+This can be seen as a "tech demo" for [tachyonfx](https://github.com/junkdog/tachyonfx). 
 
 Feel free to open issues for any features requests or bugs you find!
 
