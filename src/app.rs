@@ -11,7 +11,7 @@ use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
 use crossterm::event::ModifierKeyCode::{LeftAlt, LeftControl, LeftMeta, LeftShift};
 use crossterm::event::{KeyCode, ModifierKeyCode};
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Margin, Rect};
+use ratatui::layout::{Margin, Rect, Size};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
 use tachyonfx::fx::consume_tick;
@@ -255,6 +255,10 @@ impl ExabindApp {
                     self.dispatch(NextCategory)
                 }
             }
+            Resize(w, h) => {
+                ui_state.screen = Size::new(w, h);
+                self.update_selected_category(ui_state);
+            }
             DeselectCategory          => {
                 self.keymap_context.deselect_category();
                 self.stage_mut()
@@ -301,6 +305,10 @@ impl ExabindApp {
     }
 
     fn update_selected_category(&mut self, ui_state: &mut UiState) {
+        if self.keymap_context.current_category.is_none() {
+            return;
+        }
+
         self.stateful_widgets.update_shortcut_category(&self.keymap_context, ui_state);
 
         let widget = self.stateful_widgets

@@ -4,6 +4,7 @@ use ratatui::crossterm::event::KeyEvent;
 #[derive(Debug, Clone)]
 pub enum ExabindEvent {
     Tick,
+    Resize(u16, u16),
     Shutdown,
     /// A key event.
     KeyPress(KeyEvent),

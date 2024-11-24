@@ -12,10 +12,10 @@ pub fn format_keycode(
     };
 
     match key_code {
-        F(n)                => return format!("F{}", n),
-        Char(c) if c == ' ' => return "␣".to_string(),
-        Char(c)             => return c.to_uppercase().to_string(),
-        _                   => (),
+        F(n)      => return format!("F{}", n),
+        Char(' ') => return "␣".to_string(),
+        Char(c)   => return c.to_uppercase().to_string(),
+        _         => (),
     }
 
     match key_code {
@@ -69,7 +69,7 @@ pub fn format_keycode(
         Modifier(RightMeta)      => "Meta",
         Modifier(IsoLevel3Shift) => "Iso3",
         Modifier(IsoLevel5Shift) => "Iso5",
-        F(_) => unreachable!("F key already handled"),
-        Char(_) => unreachable!("Char already handled"),
+        F(_)                     => unreachable!("F key already handled"),
+        Char(_)                  => unreachable!("Char already handled"),
     }.to_string()
 }

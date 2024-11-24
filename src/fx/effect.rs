@@ -191,7 +191,7 @@ pub fn starting_up() -> Effect {
     let initial_delay = Duration::from_millis(300);
     let mut accrued_delay = initial_delay.as_millis();
 
-    "exabind".char_indices().enumerate().for_each(|(i, (_, c))| {
+    "exabind".char_indices().for_each(|(_, c)| {
         let delta: u32 = rng.gen_range(100..200);
         accrued_delay += delta;
 
@@ -299,7 +299,7 @@ pub fn dispatch_event<T: Clone + Send + 'static>(
     event: T
 ) -> Effect {
     effect_fn_buf(Some(event), 1, move |e, _, _| {
-        e.take().map(|e| sender.dispatch(e));
+        if let Some(e) = e.take() { sender.dispatch(e) }
     })
 }
 
@@ -343,8 +343,8 @@ fn draw_single_border(key_cap: KeyCap, duration: Duration) -> Effect {
     use tachyonfx::fx::*;
     let border_style = Style::default().fg(Catppuccin::new().base);
 
-    effect_fn_buf((), duration, move |_state, ctx, buf| {
-        render_border_with(&[key_cap.clone()], buf, move |d, pos, cell| {
+    effect_fn_buf((), duration, move |_state, _ctx, buf| {
+        render_border_with(&[key_cap.clone()], buf, move |d, _pos, cell| {
             draw_key_border(d, cell);
             cell.set_style(border_style);
         });

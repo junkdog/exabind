@@ -47,8 +47,6 @@ macro_rules! kbd_layout {
     };
 }
 
-const COLORS: Catppuccin = Catppuccin::new();
-
 impl KeyboardLayout for AnsiKeyboardTklLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect {
         let size = match supplant_key_code(key_code) {
@@ -351,7 +349,7 @@ impl KeyCapWidget {
         let key_string = match self.key_cap.key_code {
             KeyCode::Esc => "ESC".to_string(),
             KeyCode::F(n) => format!("F{}", n),
-            KeyCode::Char(c) if c == ' ' => "␣".to_string(),
+            KeyCode::Char(' ') => "␣".to_string(),
             KeyCode::Char(c) => c.to_string(),
             KeyCode::Backspace => "⌫".to_string(),
             KeyCode::Tab => "⇥".to_string(),

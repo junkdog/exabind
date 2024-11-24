@@ -18,20 +18,19 @@ mod color_cycle;
 use app::ExabindApp;
 
 use crate::app::KeyMapContext;
-use crate::fx::effect::{open_all_categories, starting_up};
 use crate::event_handler::EventHandler;
+use crate::fx::effect::{open_all_categories, starting_up};
 use crate::keymap::IntoKeyMap;
 use crate::parser::kde::parse_kglobalshortcuts;
 use crate::stateful_widgets::StatefulWidgets;
 use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
 use crate::tui::Tui;
 use crate::widget::{AnsiKeyboardTklLayout, ShortcutsWidget};
+use clap::Parser;
 use ::crossterm::event::{KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 use ::crossterm::execute;
 use ::crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
 use ratatui::backend::CrosstermBackend;
-use ratatui::layout::Constraint::Percentage;
-use ratatui::layout::Layout;
 use ratatui::prelude::{Frame, StatefulWidget, Stylize};
 use ratatui::style::Style;
 use ratatui::widgets::{Block, StatefulWidgetRef};
@@ -39,8 +38,7 @@ use ratatui::Terminal;
 use std::io;
 use std::io::{stdout, Stdout};
 use std::path::PathBuf;
-use clap::Parser;
-use tachyonfx::{Duration};
+use tachyonfx::Duration;
 
 /// Exabind - A keyboard shortcut visualization tool
 #[derive(Parser, Debug)]
@@ -147,6 +145,8 @@ fn ui(
     stateful_widgets: &StatefulWidgets,
     ui_state: &mut ui_state::UiState
 ) {
+    use ratatui::prelude::Widget;
+
     ui_state.screen = f.area().as_size();
     if f.area().is_empty() || f.area().width == 2500 || f.area().height < 3 {
         return;
@@ -165,9 +165,6 @@ fn ui(
         .iter()
         .for_each(|w| w.render_ref(area, f.buffer_mut(), &mut ui_state.shortcuts));
 
-    let demo_area = Layout::horizontal([Percentage(50), Percentage(50)])
-        .split(f.area())[1];
-    use ratatui::prelude::Widget;
     // widget::ColorDemoWidget::new().render(demo_area, f.buffer_mut());
 }
 

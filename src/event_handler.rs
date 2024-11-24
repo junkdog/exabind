@@ -27,7 +27,7 @@ impl EventHandler {
                         .unwrap_or(tick_rate);
 
                     if event::poll(timeout).expect("successfully polled for events") {
-                        Self::apply_event(&sender);
+                        Self::consume_event(&sender);
                     }
 
                     if last_tick.elapsed() >= tick_rate {
@@ -56,15 +56,14 @@ impl EventHandler {
         }
     }
 
-    fn apply_event(sender: &mpsc::Sender<ExabindEvent>) {
+    fn consume_event(sender: &mpsc::Sender<ExabindEvent>) {
         match event::read().expect("event is read") {
             CrosstermEvent::Key(e) if e.kind == KeyEventKind::Press =>
                 sender.send(ExabindEvent::KeyPress(e)),
+            CrosstermEvent::Resize(w, h) =>
+                sender.send(ExabindEvent::Resize(w, h)),
 
-            e => {
-                println!("{:?}", e);
-                Ok(())
-            },
+            _ => Ok(())
         }.expect("event should have been sent");
     }
 }

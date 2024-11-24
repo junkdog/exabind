@@ -101,7 +101,7 @@ fn outline_key_cap_borders(key_caps: &[KeyCap], border_style: Style) -> Effect {
     use tachyonfx::fx::*;
 
     let key_caps = key_caps.to_vec();
-    effect_fn_buf((), Duration::from_millis(1), move |_state, ctx, buf| {
+    effect_fn_buf((), Duration::from_millis(1), move |_state, _ctx, buf| {
         let key_caps = key_caps.clone();
 
         let area = buf.area;
@@ -112,7 +112,7 @@ fn outline_key_cap_borders(key_caps: &[KeyCap], border_style: Style) -> Effect {
         let area_width = buf.area.right() as isize;
         let cell_bits = buf.area.bottom() as isize * area_width;
         let mut key_cap_cells = BitSet::with_capacity(cell_bits as usize);
-        render_border_with(&key_caps, buf, move |d, pos, cell| {
+        render_border_with(&key_caps, buf, move |d, _pos, cell| {
             draw_key_border(d, cell);
             cell.set_style(border_style);
             cell.skip = false;
