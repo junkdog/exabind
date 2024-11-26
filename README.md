@@ -22,7 +22,7 @@ Feel free to open issues for any features requests or bugs you find!
 ## Running
 
 ```bash
-cargo run --release exabind
+cargo run --release
 ```
 
 ## Usage
