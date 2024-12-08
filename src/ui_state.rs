@@ -3,7 +3,7 @@ use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
 use crate::widget::{KeyCap, KeyboardLayout, KeyboardWidget, ShortcutsWidgetState};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Rect, Size};
-use ratatui::style::{Modifier, Style, Stylize};
+use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{Block, Widget};
 use tachyonfx::{ref_count, BufferRenderer, Duration, Effect, RefCount};
 use crate::fx::effect::UniqueEffectId;
@@ -25,8 +25,6 @@ struct KeyboardState {
     buf_base: RefCount<Buffer>,
     /// Working buffer for applying effects and modifications
     buf_work: RefCount<Buffer>,
-    /// Buffer for shortcut-related rendering
-    buf_shortcuts: RefCount<Buffer>,
     /// Effect stage for keyboard animations and visual effects
     /// Note: Must be processed before the main buffer effect stage
     effects: EffectStage<UniqueEffectId>,
@@ -42,7 +40,6 @@ impl UiState {
             kbd: KeyboardState {
                 buf_base: ref_count(Buffer::empty(area)),
                 buf_work: ref_count(Buffer::empty(area)),
-                buf_shortcuts: ref_count(Buffer::empty(area)),
                 effects: EffectStage::default(),
                 active_modifiers: Vec::new(),
                 offset: Offset::default(),

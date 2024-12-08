@@ -1,24 +1,18 @@
 use crate::dispatcher::Dispatcher;
-use crate::exabind_event::{ExabindEvent, UiElement};
+use crate::exabind_event::ExabindEvent;
 use crossterm::event::KeyEvent;
 use std::sync::mpsc::Sender;
 
 #[derive(Debug)]
 pub struct InputProcessor {
     sender: Sender<ExabindEvent>,
-    input_receiver_view: UiElement,
 }
 
 impl InputProcessor {
     pub fn new(sender: Sender<ExabindEvent>) -> Self {
         Self {
             sender,
-            input_receiver_view: UiElement::Category,
         }
-    }
-
-    pub fn change_input(&mut self, receiver: UiElement) {
-        self.input_receiver_view = receiver;
     }
 
     pub fn apply(&self, event: &ExabindEvent) {

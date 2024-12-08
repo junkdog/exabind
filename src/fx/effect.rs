@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use crate::app::KeyMapContext;
 use crate::color_cycle::{ColorCycle, IndexResolver, PingPongColorCycle, RepeatingColorCycle, RepeatingCycle};
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
@@ -11,12 +11,12 @@ use ratatui::buffer::Cell;
 use ratatui::layout::{Margin, Position, Rect, Size};
 use ratatui::prelude::Buffer;
 use ratatui::style::{Color, Style};
+use std::fmt::Debug;
 use std::sync::mpsc::Sender;
 use std::time::Instant;
-use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
-use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
+use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in};
 use tachyonfx::Motion::UpToDown;
-use crate::app::KeyMapContext;
+use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UniqueEffectId {
@@ -331,7 +331,7 @@ pub fn outline_selected_category_key_caps(
     let fx = parallel(&[
         outline,
         sequence(&[
-            sweep_in(Direction::UpToDown, 40, 40, CATPPUCCIN.crust, (350, Interpolation::QuadIn)),
+            sweep_in(UpToDown, 40, 40, CATPPUCCIN.crust, (350, Interpolation::QuadIn)),
             color_cycle_fg(select_category_color_cycle(color, 9), 33, |_| true),
         ]).with_cell_selection(keycap_outline),
     ]);

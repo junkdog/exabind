@@ -10,20 +10,15 @@ pub trait ExabindTheme {
     fn kbd_surface(&self) -> Style;
     fn kbd_cap_border(&self) -> Style;
     fn kbd_cap_text(&self) -> Style;
-    fn kbd_cap_outline(&self) -> Style;
     fn kbd_cap_outline_category(&self, category_index: usize) -> Style;
-    fn kbd_active_modifier_keys(&self) -> Style;
     fn kbd_led_colors(&self) -> [Color; 3];
 
     fn kbd_key_press_color(&self) -> Color;
 
-    fn shortcuts_widget_surface(&self) -> Style;
     fn shortcuts_widget_keystroke(&self) -> Style;
     fn shortcuts_widget_label(&self) -> Style;
-    fn shortcuts_widget_dimmed(&self) -> Style;
     fn shortcuts_base_color(&self, category_index: usize) -> Color;
 }
-
 
 impl ExabindTheme for Theme {
     fn kbd_surface(&self) -> Style {
@@ -43,22 +38,10 @@ impl ExabindTheme for Theme {
             .bg(COLORS.crust)
     }
 
-    fn kbd_cap_outline(&self) -> Style {
-        Style::default()
-            .fg(COLORS.lavender)
-    }
-
     fn kbd_cap_outline_category(&self, category_index: usize) -> Style {
         let base_color = Self.shortcuts_base_color(category_index);
         Style::default()
             .fg(COLORS.crust.lerp(&base_color, 0.85))
-    }
-
-    fn kbd_active_modifier_keys(&self) -> Style {
-        Style::default()
-            .fg(COLORS.peach)
-            .bg(COLORS.surface0)
-            .add_modifier(Modifier::BOLD)
     }
 
     fn kbd_led_colors(&self) -> [Color; 3] {
@@ -73,11 +56,6 @@ impl ExabindTheme for Theme {
         COLORS.sapphire
     }
 
-    fn shortcuts_widget_surface(&self) -> Style {
-        Style::default()
-            .bg(COLORS.surface2)
-    }
-
     fn shortcuts_widget_keystroke(&self) -> Style {
         Style::default()
             .fg(COLORS.flamingo)
@@ -87,10 +65,6 @@ impl ExabindTheme for Theme {
     fn shortcuts_widget_label(&self) -> Style {
         Style::default()
             .fg(COLORS.text)
-    }
-
-    fn shortcuts_widget_dimmed(&self) -> Style {
-        Style::default()
     }
 
     fn shortcuts_base_color(&self, category_index: usize) -> Color {

@@ -3,8 +3,8 @@ use crate::parser::kde::line::kglobalshortcuts_parser;
 use crate::shortcut::{Action, Shortcut};
 use anpa::combinators::{attempt, many, many_to_vec, middle, no_separator, right, separator};
 use anpa::core::{parse, ParserExt, StrParser};
-use anpa::{create_parser, or, right, tuplify, variadic};
 use anpa::parsers::{item_while, skip, until};
+use anpa::{or, right, tuplify};
 use crossterm::event::{KeyCode, MediaKeyCode};
 use std::collections::HashMap;
 
@@ -165,7 +165,7 @@ mod line {
 // keystroke parsers
 mod keys {
     use super::*;
-    
+
 
     fn shortcut_keystroke<'a>() -> impl StrParser<'a, Shortcut> {
         many_to_vec(key_code(), true, separator(or!(skip('+')), false))
@@ -247,6 +247,7 @@ mod keys {
 
     #[cfg(test)]
     mod tests {
+        use crossterm::event::ModifierKeyCode;
         use super::*;
 
         #[test]

@@ -14,6 +14,7 @@ pub struct Unique<K: Clone> {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub(super) struct UniqueContext<K: Clone> {
     pub key: K,
     pub instance_id: InstanceId,

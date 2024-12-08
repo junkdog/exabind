@@ -29,14 +29,11 @@ use crate::widget::{AnsiKeyboardTklLayout, ShortcutsWidget};
 use clap::Parser;
 use ::crossterm::event::{KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 use ::crossterm::execute;
-use ::crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
-use ratatui::backend::CrosstermBackend;
-use ratatui::prelude::{Frame, StatefulWidget, Stylize};
+use ratatui::prelude::Frame;
 use ratatui::style::Style;
 use ratatui::widgets::{Block, StatefulWidgetRef};
-use ratatui::Terminal;
 use std::io;
-use std::io::{stdout, Stdout};
+use std::io::stdout;
 use std::path::PathBuf;
 use tachyonfx::Duration;
 
@@ -186,29 +183,4 @@ fn shortcut_widgets(context: &KeyMapContext) -> Vec<ShortcutsWidget> {
     context.unordered_categories().iter()
         .map(|category| shortcut_widget(context, category))
         .collect()
-}
-
-
-
-fn init_crossterm() -> io::Result<Terminal<CrosstermBackend<Stdout>>> {
-    set_panic_hook();
-    enable_raw_mode()?;
-
-    let mut stdout = stdout();
-
-    execute!(
-        stdout,
-        EnterAlternateScreen,
-        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES)
-    )?;
-    let backend = CrosstermBackend::new(stdout);
-    Terminal::new(backend)
-}
-
-fn set_panic_hook() {
-    let hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        ratatui::restore();
-        hook(info);
-    }));
 }

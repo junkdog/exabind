@@ -57,10 +57,6 @@ impl Shortcut {
         }
     }
 
-    pub fn contains(&self, key: KeyCode) -> bool {
-        self.keystroke.contains(&key)
-    }
-
     pub fn uses_modifier(&self, key: ModifierKeyCode) -> bool {
         self.keystroke.iter().any(|kc| {
             if let KeyCode::Modifier(m) = kc {
@@ -89,16 +85,8 @@ impl Action {
         &self.id
     }
 
-    pub fn category(&self) -> &str {
-        &self.category
-    }
-
     pub fn shortcuts(&self) -> &[Shortcut] {
         &self.shortcuts
-    }
-
-    pub fn is_bound(&self) -> bool {
-        !self.shortcuts.is_empty()
     }
 
     pub fn update_category<S: ToString>(&mut self, category: S) {

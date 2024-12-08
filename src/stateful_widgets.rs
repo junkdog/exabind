@@ -64,7 +64,7 @@ impl StatefulWidgets {
                 match *id {
                     KBD_WIDGET_ID => ui_state.set_kbd_offset(Offset { x: pos.x as _, y: pos.y as _ }),
                     id         => {
-                        let shortcut =  shortcuts.iter_mut().find(|(idx, w)| *idx == id).unwrap();
+                        let shortcut =  shortcuts.iter_mut().find(|(idx, _)| *idx == id).unwrap();
                         shortcut.1.position = *pos;
                     }
                 }

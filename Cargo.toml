@@ -9,8 +9,6 @@ bit-set = "0.8.0"
 crossterm = "0.28.1"
 ratatui = { version = "0.29.0", features = ["unstable-widget-ref"] }
 tachyonfx = "0.10.0"
-zip = "2.2.0"
-itertools = "0.13.0"
 rectangle-pack = "0.4.2"
 clap = { version = "4.5.21", features = ["derive"] }
 dirs = "5.0.1"

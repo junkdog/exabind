@@ -1,7 +1,7 @@
 use crate::app::BoundShortcut;
 use crate::styling::{Catppuccin, CATPPUCCIN};
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Position, Rect, Size};
+use ratatui::layout::{Constraint, Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::symbols::border::Set;
 use ratatui::text::{Span, Text};
@@ -9,11 +9,7 @@ use ratatui::widgets::{Block, Clear, Row, StatefulWidgetRef, Table, TableState, 
 use tachyonfx::{HslConvertable, Interpolatable};
 
 pub struct ShortcutsWidget {
-    title: String,
-    category: String,
     shortcuts: Vec<BoundShortcut>,
-    pub selected_shortcut: Option<usize>,
-    size: Size,
     pub position: Position,
     max_shortcut_title_width: u16,
     max_shortcut_keystroke_width: u16,
@@ -45,11 +41,6 @@ impl ShortcutsWidget {
             .map(|s| s.to_string().char_indices().count())
             .max()
             .unwrap_or(0);
-
-        let width = width_name + width_shortcut + 3;
-        let height = shortcuts.iter()
-            .map(BoundShortcut::shortcut)
-            .count();
 
         let (h, s, l) = base_color.to_hsl();
 
@@ -83,13 +74,9 @@ impl ShortcutsWidget {
             .row_highlight_style(selected_row_style);
 
         Self {
-            title: title2,
-            category: title,
             shortcuts,
             table,
             position: Position::default(),
-            size: Size::new((width + 2) as _, (height + 2) as _), // border padding
-            selected_shortcut: None,
             max_shortcut_title_width: width_name as _,
             max_shortcut_keystroke_width: width_shortcut as _,
             bg_color,
@@ -103,42 +90,6 @@ impl ShortcutsWidget {
 
     pub fn border_color(&self) -> Color {
         self.border_color
-    }
-
-    pub fn initial_state(&self) -> ShortcutsWidgetState {
-        let table_state = TableState::default();
-
-        ShortcutsWidgetState {
-            table_state,
-        }
-    }
-
-    pub fn title(&self) -> &str {
-        &self.title
-    }
-
-    pub fn clear_selected_shortcut(&mut self) {
-        self.selected_shortcut = None;
-    }
-
-    pub fn select_next_shortcut(&mut self) {
-        if let Some(selected) = self.selected_shortcut {
-            if selected < self.shortcuts.len() - 1 {
-                self.selected_shortcut = Some(selected + 1);
-            }
-        } else {
-            self.selected_shortcut = Some(0);
-        }
-    }
-
-    pub fn select_previous_shortcut(&mut self) {
-        if let Some(selected) = self.selected_shortcut {
-            if selected > 0 {
-                self.selected_shortcut = Some(selected - 1);
-            }
-        } else {
-            self.selected_shortcut = Some(0);
-        }
     }
 
     pub fn area(&self) -> Rect {
@@ -221,17 +172,6 @@ impl StatefulWidgetRef for ShortcutsWidget {
         }
     }
 }
-
-const SHORTCUT_SET: Set = Set {
-    top_left:          "◢",
-    top_right:         "▜",
-    bottom_left:       "▙",
-    bottom_right:      "╱",
-    vertical_left:     "▏",
-    vertical_right:    "▕",
-    horizontal_top:    "▔",
-    horizontal_bottom: "▁",
-};
 
 const SHORTCUT_SET_2: Set = Set {
     top_left:          "◢",

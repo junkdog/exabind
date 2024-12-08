@@ -7,15 +7,6 @@ pub struct ShortcutCategoriesWidget {
     categories: Vec<(String, usize)>,
 }
 
-
-impl ShortcutCategoriesWidget {
-    pub fn new(
-        categories: Vec<(String, usize)>,
-    ) -> Self {
-        Self { categories }
-    }
-}
-
 impl StatefulWidget for ShortcutCategoriesWidget {
     type State = ListState;
 

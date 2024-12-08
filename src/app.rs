@@ -15,7 +15,7 @@ use ratatui::layout::{Margin, Rect, Size};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
 use tachyonfx::fx::consume_tick;
-use tachyonfx::{fx, CellFilter, Duration, Effect, Interpolation, Shader};
+use tachyonfx::{fx, CellFilter, Duration, Effect, Interpolation};
 
 pub struct ExabindApp {
     running: bool,
@@ -136,7 +136,7 @@ impl KeyMapContext {
     pub fn filtered_actions_by_category(&self, category: &str) -> (usize, Vec<BoundShortcut>) {
         let keymap = &self.keymap;
 
-        let uses_any_modifier_keys = |shortcut: &Shortcut| -> bool {
+        let uses_any_modifier_keys = || -> bool {
             self.filter_key_control
                 || self.filter_key_shift
                 || self.filter_key_alt
@@ -144,7 +144,7 @@ impl KeyMapContext {
         };
 
         let uses_active_modifier_keys = |shortcut: &Shortcut| -> bool {
-            !uses_any_modifier_keys(shortcut) || (
+            !uses_any_modifier_keys() || (
                 self.filter_key_control  == shortcut.uses_modifier(LeftControl)
                     && self.filter_key_shift == shortcut.uses_modifier(LeftShift)
                     && self.filter_key_alt   == shortcut.uses_modifier(LeftAlt)
@@ -200,10 +200,6 @@ impl ExabindApp {
         }
     }
 
-    pub fn keymap(&self) -> &KeyMap {
-        &self.keymap_context.keymap
-    }
-
     pub fn keymap_context(&self) -> &KeyMapContext {
         &self.keymap_context
     }
@@ -249,7 +245,6 @@ impl ExabindApp {
             Shutdown                  => self.running = false,
             KeyPress(_)               => self.input_processor.apply(&event),
             StartupAnimation          => ui_state.register_kbd_effect(starting_up()),
-            ActivateUiElement(el)     => self.input_processor.change_input(el),
             AutoSelectCategory => {
                 if self.keymap_context.category().is_none() {
                     self.dispatch(NextCategory)
@@ -294,13 +289,6 @@ impl ExabindApp {
                 let fx = effect::open_category(widget.bg_color(), area);
                 self.register_effect(fx);
             }
-            // NextShortcut => self.stateful_widgets
-            //     .shortcuts_window
-            //     .select_next_shortcut(),
-            // PreviousShortcut => self.stateful_widgets
-            //     .shortcuts_window
-            //     .select_previous_shortcut(),
-            _ => (),
         }
     }
 

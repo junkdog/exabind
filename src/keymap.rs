@@ -25,10 +25,6 @@ impl KeyMap {
             .unwrap_or(&EMPTY_ACTIONS)
     }
 
-    pub fn category_map(&self) -> &HashMap<String, Vec<Action>> {
-        &self.actions
-    }
-
     pub fn actions(&self) -> impl Iterator<Item=&Action> {
         self.actions.values().flat_map(|v| v.iter())
     }
@@ -38,49 +34,6 @@ impl KeyMap {
             .map(|(category, actions)| (category.clone(), actions.len()))
             .collect()
     }
-
-    // pub fn categories(&self) -> Vec<(String, usize)> {
-    //     let mut categories: HashMap<String, usize> = HashMap::new();
-    //     self.actions.values()
-    //         .flatten()
-    //         .filter(|a| a.is_bound())
-    //         .map(|a| a.category.to_string())
-    //         .for_each(|category| {
-    //             let count = categories.entry(category).or_insert(0);
-    //             *count += 1;
-    //         });
-    //
-    //     let mut cats: Vec<_> = categories.into_iter().collect();
-    //     cats.sort_by(|(c1, _), (c2, _)| c1.cmp(c2));
-    //     cats
-    // }
-
-    // pub fn valid_actions(&self) -> impl Iterator<Item=(&'static str, &Action)> {
-    //     // req re-impl since update to KeyMap::actions
-    //     self.actions.values()
-    //         .flatten()
-    //         .filter(|a| a.is_bound())
-    //         .map(|a| (crate::parser::jetbrains::categorize_action(a), a))
-    // }
-    //
-    //
-    //
-    // pub fn categories(&self) -> Vec<(String, usize)> {
-    //     let mut categories: HashMap<String, usize> = HashMap::new();
-    //     self.actions.values()
-    //         .flatten()
-    //         .filter(|a| a.is_bound())
-    //         // .map(categorize_action)
-    //         .for_each(|category| {
-    //             let count = categories.entry(category.to_string()).or_insert(0);
-    //             *count += 1;
-    //         });
-    //
-    //     let mut cats: Vec<_> = categories.into_iter().collect();
-    //     cats.sort_by(|(c1, _), (c2, _)| c1.cmp(c2));
-    //     cats
-    //
-    // }
 }
 
 impl Display for KeyMap {
