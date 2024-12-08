@@ -14,19 +14,19 @@ mod keymap;
 mod stateful_widgets;
 mod fx;
 mod color_cycle;
+mod args;
 
 use app::ExabindApp;
 
-use crate::app::KeyMapContext;
+use crate::args::parse_args;
 use crate::event_handler::EventHandler;
 use crate::fx::effect::{open_all_categories, starting_up};
 use crate::keymap::IntoKeyMap;
 use crate::parser::kde::parse_kglobalshortcuts;
 use crate::stateful_widgets::StatefulWidgets;
-use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
+use crate::styling::CATPPUCCIN;
 use crate::tui::Tui;
-use crate::widget::{AnsiKeyboardTklLayout, ShortcutsWidget};
-use clap::Parser;
+use crate::widget::AnsiKeyboardTklLayout;
 use ::crossterm::event::{KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 use ::crossterm::execute;
 use ratatui::prelude::Frame;
@@ -34,47 +34,7 @@ use ratatui::style::Style;
 use ratatui::widgets::{Block, StatefulWidgetRef};
 use std::io;
 use std::io::stdout;
-use std::path::PathBuf;
 use tachyonfx::Duration;
-
-/// Exabind - A keyboard shortcut visualization tool
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-pub struct Args {
-    /// Path to KDE global shortcuts file (typically ~/.config/kglobalshortcutsrc)
-    #[arg(short, long)]
-    pub shortcuts_file: Option<PathBuf>,
-}
-
-pub fn parse_args() -> Result<PathBuf, String> {
-    let args = Args::parse();
-
-    // Use provided path or fall back to default
-    let shortcuts_path = args.shortcuts_file
-        .unwrap_or(PathBuf::from("~/.config/kglobalshortcutsrc"));
-
-    // Expand tilde if present
-    let expanded_path = if shortcuts_path.to_string_lossy().starts_with('~') {
-        if let Some(home) = dirs::home_dir() {
-            let path_str = shortcuts_path.to_string_lossy().replace('~', &home.to_string_lossy());
-            PathBuf::from(path_str)
-        } else {
-            return Err("Could not determine home directory".to_string());
-        }
-    } else {
-        shortcuts_path
-    };
-
-    // Verify file exists
-    if !expanded_path.exists() {
-        return Err(format!(
-            "Shortcuts file not found at: {}\nProvide path with --shortcuts-file or place file at default location",
-            expanded_path.display()
-        ));
-    }
-
-    Ok(expanded_path)
-}
 
 fn main() -> io::Result<()> {
     let shortcuts_path = match parse_args() {
@@ -161,26 +121,5 @@ fn ui(
     stateful_widgets.shortcuts
         .iter()
         .for_each(|w| w.render_ref(area, f.buffer_mut(), &mut ui_state.shortcuts));
-
-    // widget::ColorDemoWidget::new().render(demo_area, f.buffer_mut());
 }
 
-
-fn shortcut_widget(context: &KeyMapContext, category: &str) -> ShortcutsWidget {
-    let (category_idx, actions) = context.filtered_actions_by_category(category);
-    let base_color = Theme.shortcuts_base_color(category_idx);
-
-    ShortcutsWidget::new(
-        category.to_string(),
-        Theme.shortcuts_widget_keystroke(),
-        Theme.shortcuts_widget_label(),
-        base_color,
-        actions
-    )
-}
-
-fn shortcut_widgets(context: &KeyMapContext) -> Vec<ShortcutsWidget> {
-    context.unordered_categories().iter()
-        .map(|category| shortcut_widget(context, category))
-        .collect()
-}
