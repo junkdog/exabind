@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::color_cycle::{ColorCycle, IndexResolver, PingPongColorCycle, RepeatingColorCycle, RepeatingCycle};
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
@@ -12,9 +13,9 @@ use ratatui::prelude::Buffer;
 use ratatui::style::{Color, Style};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
-use tachyonfx::fx::Direction::UpToDown;
 use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in, Direction};
 use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
+use tachyonfx::Motion::UpToDown;
 use crate::app::KeyMapContext;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -233,7 +234,7 @@ pub fn color_cycle_fg<I, P>(
     step_duration: u32,
     predicate: P,
 ) -> Effect where
-    I: IndexResolver<Color> + Clone + Send + 'static,
+    I: IndexResolver<Color> + Clone + Debug + Send + 'static,
     P: Fn(&Cell) -> bool + 'static
 {
     use tachyonfx::fx::*;
@@ -294,7 +295,7 @@ pub fn led_kbd_border() -> Effect {
 ///
 /// # Returns
 /// An Effect that dispatches the specified event.
-pub fn dispatch_event<T: Clone + Send + 'static>(
+pub fn dispatch_event<T: Clone + Debug + Send + 'static>(
     sender: Sender<T>,
     event: T
 ) -> Effect {

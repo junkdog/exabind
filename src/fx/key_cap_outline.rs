@@ -9,7 +9,7 @@ use crate::app::{BoundShortcut, KeyMapContext};
 use crate::styling::{ExabindTheme, Theme};
 use crate::widget::{draw_key_border, render_border_with, supplant_key_code, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct KeyCapOutline {
     buffer: Buffer, // blit to buffer
     cell_filter: Option<CellFilter>,

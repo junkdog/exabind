@@ -2,6 +2,7 @@ use crate::fx::unique::{Unique, UniqueContext};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use std::collections::BTreeMap;
+use std::fmt::Debug;
 use tachyonfx::{ref_count, Duration, Effect, IntoEffect, RefCount, Shader, SimpleRng};
 
 /// A stage that manages a collection of terminal UI effects, including uniquely
@@ -17,7 +18,7 @@ pub struct EffectStage<K: Clone + Ord + 'static> {
     rng: SimpleRng,
 }
 
-impl<K: Clone + Ord> EffectStage<K> {
+impl<K: Clone + Debug + Ord> EffectStage<K> {
     /// Creates a unique effect that will cancel any existing effect with the same key.
     /// The effect must be added to the stage using [`add_effect`] to be processed.
     ///

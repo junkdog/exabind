@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::ops::Deref;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -5,7 +6,7 @@ use tachyonfx::{CellFilter, Duration, Effect, EffectTimer, RefCount, Shader};
 
 pub type InstanceId = u32;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Unique<K: Clone> {
     id_context: RefCount<UniqueContext<K>>,
     instance_id: InstanceId,
@@ -38,7 +39,7 @@ impl<K: Clone> Unique<K> {
     }
 }
 
-impl<K: Clone + 'static> Shader for Unique<K> {
+impl<K: Clone + Debug + 'static> Shader for Unique<K> {
     fn name(&self) -> &'static str {
         "unique"
     }
