@@ -12,3 +12,10 @@ tachyonfx = "0.10.0"
 rectangle-pack = "0.4.2"
 clap = { version = "4.5.21", features = ["derive"] }
 dirs = "5.0.1"
+
+[profile.release-optimized]
+inherits = "release"
+lto = true
+codegen-units = 1
+opt-level = "z"
+strip = "symbols"
