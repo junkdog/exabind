@@ -1,11 +1,10 @@
-use crate::fx::EffectStage;
 use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
 use crate::widget::{KeyCap, KeyboardLayout, KeyboardWidget, ShortcutsWidgetState};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Rect, Size};
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{Block, Widget};
-use tachyonfx::{ref_count, BufferRenderer, Duration, Effect, RefCount};
+use tachyonfx::{ref_count, BufferRenderer, Duration, Effect, EffectManager, RefCount};
 use crate::fx::effect::UniqueEffectId;
 
 /// Represents the overall UI state of the application, managing the screen dimensions,
@@ -27,7 +26,7 @@ struct KeyboardState {
     buf_work: RefCount<Buffer>,
     /// Effect stage for keyboard animations and visual effects
     /// Note: Must be processed before the main buffer effect stage
-    effects: EffectStage<UniqueEffectId>,
+    effects: EffectManager<UniqueEffectId>,
     /// Currently active modifier keys
     active_modifiers: Vec<KeyCap>,
     /// Current offset for keyboard rendering position
@@ -40,7 +39,7 @@ impl UiState {
             kbd: KeyboardState {
                 buf_base: ref_count(Buffer::empty(area)),
                 buf_work: ref_count(Buffer::empty(area)),
-                effects: EffectStage::default(),
+                effects: EffectManager::default(),
                 active_modifiers: Vec::new(),
                 offset: Offset::default(),
             },
@@ -107,7 +106,7 @@ impl UiState {
     }
 
     /// Returns a mutable reference to the keyboard effects stage.
-    pub fn kbd_effects_mut(&mut self) -> &mut EffectStage<UniqueEffectId> {
+    pub fn kbd_effects_mut(&mut self) -> &mut EffectManager<UniqueEffectId> {
         &mut self.kbd.effects
     }
 

@@ -3,7 +3,6 @@ use crate::color_cycle::{ColorCycle, IndexResolver, PingPongColorCycle, Repeatin
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
 use crate::fx::key_cap_outline::KeyCapOutline;
-use crate::fx::EffectStage;
 use crate::styling::{Catppuccin, ExabindTheme, Theme, CATPPUCCIN};
 use crate::widget::{draw_key_border, render_border_with, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, ShortcutsWidget};
 use crossterm::event::KeyCode;
@@ -16,7 +15,7 @@ use std::sync::mpsc::Sender;
 use std::time::Instant;
 use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in};
 use tachyonfx::Motion::UpToDown;
-use tachyonfx::{fx, CellFilter, Duration, Effect, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
+use tachyonfx::{fx, CellFilter, Duration, Effect, EffectManager, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UniqueEffectId {
@@ -130,9 +129,9 @@ pub fn open_category(
 
     parallel(&[
         prolong_start(timer, sweep_in(UpToDown, area.height, 0, bg_color, timer))
-            .with_cell_selection(content_cells.clone()),
+            .with_filter(content_cells.clone()),
         prolong_start(timer, coalesce(timer_c))
-            .with_cell_selection(border_cells),
+            .with_filter(border_cells),
         // plays out first, but must come last to not be overridden by the above effects
         slide_in(UpToDown, area.height * 2, 0, CATPPUCCIN.crust, timer),
     ]).with_area(area)
@@ -165,7 +164,7 @@ pub fn key_press<C: Into<Color>>(
         delay(key_press_delay, parallel(&[
             clear_cells(Duration::from_millis(750)),
             draw_single_border(key.clone(), Duration::from_millis(750)),
-        ])).with_cell_selection(key_borders),
+        ])).with_filter(key_borders),
         // "click" fade; faded out during key_press_delay
         sequence(&[
             prolong_start(key_press_delay,
@@ -225,17 +224,15 @@ pub fn starting_up() -> Effect {
 ///
 /// # Type Parameters
 /// * `I` - Color index resolver type
-/// * `P` - Predicate function type
 ///
 /// # Returns
 /// An Effect that cycles colors on cells matching the predicate.
-pub fn color_cycle_fg<I, P>(
+pub fn color_cycle_fg<I>(
     colors: ColorCycle<I>,
     step_duration: u32,
-    predicate: P,
+    predicate: impl Fn(&Cell) -> bool + 'static,
 ) -> Effect where
     I: IndexResolver<Color> + Clone + Debug + Send + 'static,
-    P: Fn(&Cell) -> bool + 'static
 {
     use tachyonfx::fx::*;
 
@@ -314,7 +311,7 @@ pub fn dispatch_event<T: Clone + Debug + Send + 'static>(
 /// # Returns
 /// A unique Effect that outlines and animates relevant key caps.
 pub fn outline_selected_category_key_caps(
-    stage: &mut EffectStage<UniqueEffectId>,
+    stage: &mut EffectManager<UniqueEffectId>,
     context: &KeyMapContext,
     buffer_size: Size,
 ) -> Effect {
@@ -333,7 +330,7 @@ pub fn outline_selected_category_key_caps(
         sequence(&[
             sweep_in(UpToDown, 40, 40, CATPPUCCIN.crust, (350, Interpolation::QuadIn)),
             color_cycle_fg(select_category_color_cycle(color, 9), 33, |_| true),
-        ]).with_cell_selection(keycap_outline),
+        ]).with_filter(keycap_outline),
     ]);
 
     stage.unique(UniqueEffectId::KeyCapOutline, fx)
@@ -379,19 +376,19 @@ fn select_category_color_cycle(
 ) -> ColorCycle<RepeatingCycle> {
     let color_step: usize = 7 * length_multiplier;
 
-    let (h, s, l) = base_color.to_hsl();
+    let (h, s, l) = base_color.to_hsl_f32();
 
-    let color_l = Color::from_hsl(h, s, 80.0);
-    let color_d = Color::from_hsl(h, s, 40.0);
+    let color_l = Color::from_hsl_f32(h, s, 80.0);
+    let color_d = Color::from_hsl_f32(h, s, 40.0);
 
     
     RepeatingColorCycle::new(base_color, &[
         (4 * length_multiplier, color_d),
         (2 * length_multiplier, color_l),
-        (4 * length_multiplier, Color::from_hsl((h - 25.0) % 360.0, s, (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl(h, (s - 20.0).max(0.0), (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl((h + 25.0) % 360.0, s, (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0))),
+        (4 * length_multiplier, Color::from_hsl_f32((h - 25.0) % 360.0, s, (l + 10.0).min(100.0))),
+        (color_step, Color::from_hsl_f32(h, (s - 20.0).max(0.0), (l + 10.0).min(100.0))),
+        (color_step, Color::from_hsl_f32((h + 25.0) % 360.0, s, (l + 10.0).min(100.0))),
+        (color_step, Color::from_hsl_f32(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0))),
     ])
 }
 

@@ -56,7 +56,7 @@ impl Shader for KeyCapOutline {
         // no-op; consider supporting via skip=true
     }
 
-    fn set_cell_selection(&mut self, filter: CellFilter) {
+    fn filter(&mut self, filter: CellFilter) {
         self.cell_filter = Some(filter)
     }
 }

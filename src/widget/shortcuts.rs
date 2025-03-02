@@ -42,10 +42,10 @@ impl ShortcutsWidget {
             .max()
             .unwrap_or(0);
 
-        let (h, s, l) = base_color.to_hsl();
+        let (h, s, l) = base_color.to_hsl_f32();
 
         let selected_row_style = Style::default()
-            .bg(Color::from_hsl(h, s, 0.0_f32.max(l - 15.0)))
+            .bg(Color::from_hsl_f32(h, s, 0.0_f32.max(l - 15.0)))
             .add_modifier(Modifier::BOLD);
 
         let constraints = [

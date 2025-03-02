@@ -1,7 +1,7 @@
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
 use crate::fx::effect::{outline_selected_category_key_caps, starting_up, UniqueEffectId};
-use crate::fx::{effect, EffectStage};
+use crate::fx::effect;
 use crate::input::InputProcessor;
 use crate::keymap::KeyMap;
 use crate::shortcut::Shortcut;
@@ -15,7 +15,7 @@ use ratatui::layout::{Margin, Rect, Size};
 use std::sync::mpsc::Sender;
 use std::time::Instant;
 use tachyonfx::fx::consume_tick;
-use tachyonfx::{fx, CellFilter, Duration, Effect, Interpolation};
+use tachyonfx::{fx, CellFilter, Duration, Effect, EffectManager, Interpolation};
 
 pub struct ExabindApp {
     running: bool,
@@ -23,7 +23,7 @@ pub struct ExabindApp {
     sender: Sender<ExabindEvent>,
     last_tick: Instant,
     input_processor: InputProcessor,
-    effects: EffectStage<UniqueEffectId>,
+    effects: EffectManager<UniqueEffectId>,
     stateful_widgets: StatefulWidgets,
 }
 
@@ -195,7 +195,7 @@ impl ExabindApp {
             sender,
             keymap_context,
             last_tick: Instant::now(),
-            effects: EffectStage::default(),
+            effects: EffectManager::default(),
             stateful_widgets: widgets,
         }
     }
@@ -208,7 +208,7 @@ impl ExabindApp {
         self.effects.add_effect(effect);
     }
 
-    pub fn stage_mut(&mut self) -> &mut EffectStage<UniqueEffectId> {
+    pub fn stage_mut(&mut self) -> &mut EffectManager<UniqueEffectId> {
         &mut self.effects
     }
 
@@ -308,7 +308,7 @@ impl ExabindApp {
             effect::selected_category(color, area),
             fx::fade_from_fg(color, (200, Interpolation::BounceInOut))
                 .with_area(area)
-                .with_cell_selection(CellFilter::Outer(Margin::new(1, 1))),
+                .with_filter(CellFilter::Outer(Margin::new(1, 1))),
         ]) ;
 
         self.stage_mut().add_unique_effect(UniqueEffectId::SelectedCategory, fx);
