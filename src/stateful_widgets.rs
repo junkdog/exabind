@@ -3,12 +3,8 @@ use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
 use crate::ui_state::UiState;
 use crate::widget::{shortcut_widgets, ShortcutsWidget};
+use packr2::{pack, PackerConfig, RectInput, Size, SkylinePacker};
 use ratatui::layout::{Offset, Position, Rect};
-use rectangle_pack::{
-    contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
-    RectanglePackOk, TargetBin,
-};
-use std::collections::BTreeMap;
 use std::sync::mpsc::Sender;
 
 pub(super) struct StatefulWidgets {
@@ -48,26 +44,24 @@ impl StatefulWidgets {
             .enumerate()
             .collect();
 
-        let mut rects_to_place: GroupedRectsToPlace<usize, ()> = GroupedRectsToPlace::new();
+        let mut rects_to_place: Vec<RectInput<usize>> = vec![];
 
         // enqueue the keyboard widget first
-        rects_to_place.push_rect(
-            KBD_WIDGET_ID,
-            None,
-            RectToInsert::new(kbd.width as _, kbd.height as _, 1),
-        );
+        rects_to_place.push(RectInput {
+            key: KBD_WIDGET_ID,
+            size: Size::new(kbd.width as _, kbd.height as _),
+        });
         // and then the shortcuts
         for (idx, w) in &mut shortcuts {
             let a = w.area();
-            rects_to_place.push_rect(
-                *idx,
-                None,
-                RectToInsert::new((a.width + 1) as _, a.height as _, 1), // +1 for padding
-            )
+            rects_to_place.push(RectInput {
+                key: *idx,
+                size: Size::new((a.width + 1) as _, a.height as _), // +1 for padding
+            })
         }
 
         // pack the rects
-        self.pack_rects(rects_to_place, screen)
+        self.pack_rects(&mut rects_to_place, screen)
             .iter()
             .for_each(|(id, pos)| match *id {
                 KBD_WIDGET_ID => ui_state.set_kbd_offset(Offset {
@@ -103,54 +97,35 @@ impl StatefulWidgets {
 
     fn pack_rects(
         &self,
-        rects_to_pack: GroupedRectsToPlace<usize>,
+        rects_to_pack: &mut Vec<RectInput<usize>>,
         screen: Rect,
     ) -> Vec<(usize, Position)> {
-        let packed_locations = |packed: RectanglePackOk<usize, _>| {
-            packed
-                .packed_locations()
-                .iter()
-                .map(|(id, (_, loc))| (id, Position::new(loc.x() as _, loc.y() as _)))
-                .map(|(id, pos)| (*id, pos))
-                .collect::<Vec<_>>()
-        };
-
-        let pack_rects_fn = |screen: Rect| {
-            let mut target_bins = BTreeMap::new();
-            target_bins.insert(
-                "main",
-                TargetBin::new(screen.width as _, screen.height as _, 1),
-            );
-
-            let res = pack_rects(
-                &rects_to_pack,
-                &mut target_bins,
-                &volume_heuristic,
-                &contains_smallest_box,
-            )
-            .map(packed_locations);
-
-            match res {
-                Ok(locations) => Some((target_bins, locations)),
-                Err(_) => None,
-            }
-        };
-
         // loop pack_rects_fn until it returns Some, to pack
         // the rects into the shortest possible screen height
         let mut screen = screen;
         screen.width = screen.width.max(96);
         screen.height = 20;
-        let mut packed_locations = pack_rects_fn(screen);
-        while packed_locations.is_none() {
+        loop {
+            let packed = pack(
+                rects_to_pack,
+                SkylinePacker::new(PackerConfig {
+                    max_width: screen.width as _,
+                    max_height: screen.height as _,
+                    allow_flipping: false,
+                }),
+            );
+            if packed.len() == rects_to_pack.len() {
+                break packed;
+            }
             screen.height += 2;
-            packed_locations = pack_rects_fn(screen);
         }
-
-        let (_, packed) = packed_locations.unwrap();
-        packed
-            .into_iter()
-            .map(|(id, pos)| (id, Position::new(pos.x + screen.x, pos.y + screen.y)))
-            .collect()
+        .into_iter()
+        .map(|r| {
+            (
+                r.key,
+                Position::new(r.rect.x as u16 + screen.x, r.rect.y as u16 + screen.y),
+            )
+        })
+        .collect()
     }
 }
