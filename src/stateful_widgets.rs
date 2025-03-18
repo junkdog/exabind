@@ -97,7 +97,7 @@ impl StatefulWidgets {
     // }
 
     pub fn selected_category_widget(&self, keymap_context: &KeyMapContext) -> &ShortcutsWidget {
-        let idx = keymap_context.category_idx().expect("no category selected");
+        let idx = keymap_context.category_idx().unwrap_or(0); //.expect("no category selected");
         &self.shortcuts[idx]
     }
 
