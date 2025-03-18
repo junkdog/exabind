@@ -1,10 +1,15 @@
 use crate::app::KeyMapContext;
-use crate::color_cycle::{ColorCycle, IndexResolver, PingPongColorCycle, RepeatingColorCycle, RepeatingCycle};
+use crate::color_cycle::{
+    ColorCycle, IndexResolver, PingPongColorCycle, RepeatingColorCycle, RepeatingCycle,
+};
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
 use crate::fx::key_cap_outline::KeyCapOutline;
 use crate::styling::{Catppuccin, ExabindTheme, Theme, CATPPUCCIN};
-use crate::widget::{draw_key_border, render_border_with, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, ShortcutsWidget};
+use crate::widget::{
+    draw_key_border, render_border_with, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout,
+    ShortcutsWidget,
+};
 use crossterm::event::KeyCode;
 use ratatui::buffer::Cell;
 use ratatui::layout::{Margin, Position, Rect, Size};
@@ -15,7 +20,10 @@ use std::sync::mpsc::Sender;
 use std::time::Instant;
 use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in};
 use tachyonfx::Motion::UpToDown;
-use tachyonfx::{fx, CellFilter, Duration, Effect, EffectManager, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
+use tachyonfx::{
+    fx, CellFilter, Duration, Effect, EffectManager, EffectTimer, HslConvertable, Interpolation,
+    IntoEffect, RangeSampler, SimpleRng,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UniqueEffectId {
@@ -32,10 +40,7 @@ pub enum UniqueEffectId {
 ///
 /// # Returns
 /// An Effect that animates a border around the specified area using cycled colors
-pub fn selected_category(
-    base_color: Color,
-    area: Rect,
-) -> Effect {
+pub fn selected_category(base_color: Color, area: Rect) -> Effect {
     let color_cycle = select_category_color_cycle(base_color, 1);
 
     let effect = fx::effect_fn_buf(Instant::now(), u32::MAX, move |started_at, ctx, buf| {
@@ -47,7 +52,9 @@ pub fn selected_category(
         let area = ctx.area;
 
         let mut update_cell = |(x, y): (u16, u16), idx: usize| {
-            if let Some(cell) = buf.cell_mut((x, y)) { cell.set_fg(*color_cycle.color_at(idx)); }
+            if let Some(cell) = buf.cell_mut((x, y)) {
+                cell.set_fg(*color_cycle.color_at(idx));
+            }
         };
 
         (area.x..area.right()).enumerate().for_each(|(i, x)| {
@@ -55,9 +62,11 @@ pub fn selected_category(
         });
 
         let cell_idx_offset = area.width as usize;
-        (area.y + 1..area.bottom() - 1).enumerate().for_each(|(i, y)| {
-            update_cell((area.right() - 1, y), idx + i + cell_idx_offset);
-        });
+        (area.y + 1..area.bottom() - 1)
+            .enumerate()
+            .for_each(|(i, y)| {
+                update_cell((area.right() - 1, y), idx + i + cell_idx_offset);
+            });
 
         let cell_idx_offset = cell_idx_offset + area.height.saturating_sub(2) as usize;
         (area.x..area.right()).rev().enumerate().for_each(|(i, x)| {
@@ -65,9 +74,12 @@ pub fn selected_category(
         });
 
         let cell_idx_offset = cell_idx_offset + area.width as usize;
-        (area.y + 1..area.bottom()).rev().enumerate().for_each(|(i, y)| {
-            update_cell((area.x, y), idx + i + cell_idx_offset);
-        });
+        (area.y + 1..area.bottom())
+            .rev()
+            .enumerate()
+            .for_each(|(i, y)| {
+                update_cell((area.x, y), idx + i + cell_idx_offset);
+            });
     });
 
     effect.with_area(area)
@@ -84,17 +96,17 @@ pub fn selected_category(
 /// 1. Opens all categories with randomized delays
 /// 2. Waits for a short period
 /// 3. Triggers category selection
-pub fn open_all_categories(
-    sender: Sender<ExabindEvent>,
-    widgets: &[ShortcutsWidget]
-) -> Effect {
+pub fn open_all_categories(sender: Sender<ExabindEvent>, widgets: &[ShortcutsWidget]) -> Effect {
     let mut rng = SimpleRng::default();
 
     let max_open_category_delay = 150 * widgets.len() as u32;
-    let open_categories_fx = widgets.iter().map(|w| {
-        let delay = Duration::from_millis(rng.gen_range(0..max_open_category_delay));
-        prolong_start(delay, open_category(w.bg_color(), w.area()))
-    }).collect::<Vec<_>>();
+    let open_categories_fx = widgets
+        .iter()
+        .map(|w| {
+            let delay = Duration::from_millis(rng.gen_range(0..max_open_category_delay));
+            prolong_start(delay, open_category(w.bg_color(), w.area()))
+        })
+        .collect::<Vec<_>>();
 
     sequence(&[
         prolong_start(300, parallel(&open_categories_fx)),
@@ -114,10 +126,7 @@ pub fn open_all_categories(
 /// - Background slide-in effect
 /// - Content sweep-in animation
 /// - Border coalescing effect
-pub fn open_category(
-    bg_color: Color,
-    area: Rect,
-) -> Effect {
+pub fn open_category(bg_color: Color, area: Rect) -> Effect {
     use tachyonfx::{fx::*, Interpolation::*};
 
     let h = area.height as u32;
@@ -130,11 +139,11 @@ pub fn open_category(
     parallel(&[
         prolong_start(timer, sweep_in(UpToDown, area.height, 0, bg_color, timer))
             .with_filter(content_cells.clone()),
-        prolong_start(timer, coalesce(timer_c))
-            .with_filter(border_cells),
+        prolong_start(timer, coalesce(timer_c)).with_filter(border_cells),
         // plays out first, but must come last to not be overridden by the above effects
         slide_in(UpToDown, area.height * 2, 0, CATPPUCCIN.crust, timer),
-    ]).with_area(area)
+    ])
+    .with_area(area)
 }
 
 /// Creates a key press animation effect.
@@ -146,11 +155,7 @@ pub fn open_category(
 ///
 /// # Returns
 /// An Effect that animates both the key border and key symbol
-pub fn key_press<C: Into<Color>>(
-    key_press_delay: Duration,
-    key: KeyCap,
-    color: C
-) -> Effect {
+pub fn key_press<C: Into<Color>>(key_press_delay: Duration, key: KeyCap, color: C) -> Effect {
     use tachyonfx::fx::*;
 
     // border
@@ -161,17 +166,21 @@ pub fn key_press<C: Into<Color>>(
 
     parallel(&[
         // redraw singular border around key
-        delay(key_press_delay, parallel(&[
-            clear_cells(Duration::from_millis(750)),
-            draw_single_border(key.clone(), Duration::from_millis(750)),
-        ])).with_filter(key_borders),
+        delay(
+            key_press_delay,
+            parallel(&[
+                clear_cells(Duration::from_millis(750)),
+                draw_single_border(key.clone(), Duration::from_millis(750)),
+            ]),
+        )
+        .with_filter(key_borders),
         // "click" fade; faded out during key_press_delay
         sequence(&[
-            prolong_start(key_press_delay,
-                fade_to(c, bg, (50, Interpolation::Linear))),
+            prolong_start(key_press_delay, fade_to(c, bg, (50, Interpolation::Linear))),
             fade_from(c, bg, (700, Interpolation::SineOut)),
         ]),
-    ]).with_area(key.area)
+    ])
+    .with_area(key.area)
 }
 
 /// Creates the initial startup animation sequence.
@@ -195,7 +204,11 @@ pub fn starting_up() -> Effect {
         let delta: u32 = rng.gen_range(100..200);
         accrued_delay += delta;
 
-        let e = key_press(Duration::from_millis(accrued_delay), kbd.key_cap(c), Theme.kbd_key_press_color());
+        let e = key_press(
+            Duration::from_millis(accrued_delay),
+            kbd.key_cap(c),
+            Theme.kbd_key_press_color(),
+        );
         effects.push(e);
     });
 
@@ -203,14 +216,17 @@ pub fn starting_up() -> Effect {
     let e = key_press(
         Duration::from_millis(accrued_delay),
         KeyCap::new(KeyCode::Enter, esc_area),
-        Theme.kbd_key_press_color()
+        Theme.kbd_key_press_color(),
     );
     effects.push(e);
 
-    effects.push(fx::delay(accrued_delay + 200, fx::parallel(&[
-        fx::never_complete(led_kbd_border()),
-        fx::fade_from_fg(CATPPUCCIN.crust, (800, Interpolation::SineOut))
-    ])));
+    effects.push(fx::delay(
+        accrued_delay + 200,
+        fx::parallel(&[
+            fx::never_complete(led_kbd_border()),
+            fx::fade_from_fg(CATPPUCCIN.crust, (800, Interpolation::SineOut)),
+        ]),
+    ));
 
     fx::parallel(&effects)
 }
@@ -231,32 +247,37 @@ pub fn color_cycle_fg<I>(
     colors: ColorCycle<I>,
     step_duration: u32,
     predicate: impl Fn(&Cell) -> bool + 'static,
-) -> Effect where
+) -> Effect
+where
     I: IndexResolver<Color> + Clone + Debug + Send + 'static,
 {
     use tachyonfx::fx::*;
 
     let duration = Duration::from_millis(u32::MAX);
-    effect_fn((colors, None), duration, move |(colors, started_at), _ctx, cell_iter| {
-        if started_at.is_none() {
-            *started_at = Some(Instant::now());
-        }
+    effect_fn(
+        (colors, None),
+        duration,
+        move |(colors, started_at), _ctx, cell_iter| {
+            if started_at.is_none() {
+                *started_at = Some(Instant::now());
+            }
 
-        let elapsed = started_at.as_ref().unwrap().elapsed().as_millis().max(1);
-        let raw_color_idx = elapsed as u32 / step_duration;
+            let elapsed = started_at.as_ref().unwrap().elapsed().as_millis().max(1);
+            let raw_color_idx = elapsed as u32 / step_duration;
 
-        let color = |pos: Position| -> Color {
-            let idx = (raw_color_idx + (pos.x / 2 + pos.y * 3 / 2) as u32) as usize;
-            *colors.color_at(idx)
-        };
+            let color = |pos: Position| -> Color {
+                let idx = (raw_color_idx + (pos.x / 2 + pos.y * 3 / 2) as u32) as usize;
+                *colors.color_at(idx)
+            };
 
-        cell_iter
-            .filter(|(_, c)| predicate(c))
-            .map(|(pos, cell)| (color(pos), cell))
-            .for_each(|(color, cell)| {
-                cell.set_fg(color);
-            });
-    })
+            cell_iter
+                .filter(|(_, c)| predicate(c))
+                .map(|(pos, cell)| (color(pos), cell))
+                .for_each(|(color, cell)| {
+                    cell.set_fg(color);
+                });
+        },
+    )
 }
 
 /// Creates an animated LED border effect for the keyboard.
@@ -269,17 +290,13 @@ pub fn color_cycle_fg<I>(
 pub fn led_kbd_border() -> Effect {
     let [color_1, color_2, color_3] = Theme.kbd_led_colors();
 
-    let color_cycle = PingPongColorCycle::new(color_1, &[
-        (40, color_2),
-        (20, color_3),
-    ]);
+    let color_cycle = PingPongColorCycle::new(color_1, &[(40, color_2), (20, color_3)]);
 
     color_cycle_fg(color_cycle, 100, |cell| {
         let symbol = cell.symbol();
         symbol != " " && !symbol.chars().next().map(is_box_drawing).unwrap_or(false)
     })
 }
-
 
 /// Creates an effect that dispatches an event as soon as it starts.
 ///
@@ -292,12 +309,11 @@ pub fn led_kbd_border() -> Effect {
 ///
 /// # Returns
 /// An Effect that dispatches the specified event.
-pub fn dispatch_event<T: Clone + Debug + Send + 'static>(
-    sender: Sender<T>,
-    event: T
-) -> Effect {
+pub fn dispatch_event<T: Clone + Debug + Send + 'static>(sender: Sender<T>, event: T) -> Effect {
     effect_fn_buf(Some(event), 1, move |e, _, _| {
-        if let Some(e) = e.take() { sender.dispatch(e) }
+        if let Some(e) = e.take() {
+            sender.dispatch(e)
+        }
     })
 }
 
@@ -318,8 +334,8 @@ pub fn outline_selected_category_key_caps(
     let buf = Buffer::empty(Rect::from((Position::default(), buffer_size)));
     let outline = KeyCapOutline::new(buf, context).into_effect();
 
-    let color = Theme.kbd_cap_outline_category(context.sorted_category_idx()
-        .expect("selected category"))
+    let color = Theme
+        .kbd_cap_outline_category(context.sorted_category_idx().expect("selected category"))
         .fg
         .expect("fg color");
 
@@ -328,14 +344,20 @@ pub fn outline_selected_category_key_caps(
     let fx = parallel(&[
         outline,
         sequence(&[
-            sweep_in(UpToDown, 40, 40, CATPPUCCIN.crust, (350, Interpolation::QuadIn)),
+            sweep_in(
+                UpToDown,
+                40,
+                40,
+                CATPPUCCIN.crust,
+                (350, Interpolation::QuadIn),
+            ),
             color_cycle_fg(select_category_color_cycle(color, 9), 33, |_| true),
-        ]).with_filter(keycap_outline),
+        ])
+        .with_filter(keycap_outline),
     ]);
 
     stage.unique(UniqueEffectId::KeyCapOutline, fx)
 }
-
 
 fn draw_single_border(key_cap: KeyCap, duration: Duration) -> Effect {
     use tachyonfx::fx::*;
@@ -372,7 +394,7 @@ fn is_box_drawing(c: char) -> bool {
 /// A ColorCycle instance with derived colors and adjusted steps.
 fn select_category_color_cycle(
     base_color: Color,
-    length_multiplier: usize
+    length_multiplier: usize,
 ) -> ColorCycle<RepeatingCycle> {
     let color_step: usize = 7 * length_multiplier;
 
@@ -381,14 +403,27 @@ fn select_category_color_cycle(
     let color_l = Color::from_hsl_f32(h, s, 80.0);
     let color_d = Color::from_hsl_f32(h, s, 40.0);
 
-    
-    RepeatingColorCycle::new(base_color, &[
-        (4 * length_multiplier, color_d),
-        (2 * length_multiplier, color_l),
-        (4 * length_multiplier, Color::from_hsl_f32((h - 25.0) % 360.0, s, (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl_f32(h, (s - 20.0).max(0.0), (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl_f32((h + 25.0) % 360.0, s, (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl_f32(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0))),
-    ])
+    RepeatingColorCycle::new(
+        base_color,
+        &[
+            (4 * length_multiplier, color_d),
+            (2 * length_multiplier, color_l),
+            (
+                4 * length_multiplier,
+                Color::from_hsl_f32((h - 25.0) % 360.0, s, (l + 10.0).min(100.0)),
+            ),
+            (
+                color_step,
+                Color::from_hsl_f32(h, (s - 20.0).max(0.0), (l + 10.0).min(100.0)),
+            ),
+            (
+                color_step,
+                Color::from_hsl_f32((h + 25.0) % 360.0, s, (l + 10.0).min(100.0)),
+            ),
+            (
+                color_step,
+                Color::from_hsl_f32(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0)),
+            ),
+        ],
+    )
 }
-

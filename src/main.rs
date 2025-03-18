@@ -1,20 +1,20 @@
-mod exabind_event;
-mod widget;
-mod event_handler;
-mod dispatcher;
 mod app;
-mod input;
-mod tui;
-mod parser;
-mod crossterm;
-mod styling;
-mod ui_state;
-mod shortcut;
-mod keymap;
-mod stateful_widgets;
-mod fx;
-mod color_cycle;
 mod args;
+mod color_cycle;
+mod crossterm;
+mod dispatcher;
+mod event_handler;
+mod exabind_event;
+mod fx;
+mod input;
+mod keymap;
+mod parser;
+mod shortcut;
+mod stateful_widgets;
+mod styling;
+mod tui;
+mod ui_state;
+mod widget;
 
 use app::ExabindApp;
 
@@ -48,8 +48,7 @@ fn main() -> io::Result<()> {
     let events = EventHandler::new(std::time::Duration::from_millis(33));
     // let keymap = PathBuf::from("test/Eclipse copy.xml").parse_jetbrains_keymap();
     // let keymap = PathBuf::from("test/default.xml").parse_jetbrains_keymap();
-    let keymap = shortcuts_path
-        .into_keymap(parse_kglobalshortcuts);
+    let keymap = shortcuts_path.into_keymap(parse_kglobalshortcuts);
 
     let mut ui_state = ui_state::UiState::new();
     let sender = events.sender();
@@ -61,7 +60,7 @@ fn main() -> io::Result<()> {
         stdout(),
         PushKeyboardEnhancementFlags(
             KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-            | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
+                | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
         )
     )?;
 
@@ -88,20 +87,12 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn effects(
-    elapsed: Duration,
-    app: &mut ExabindApp,
-    f: &mut Frame<'_>,
-) {
+fn effects(elapsed: Duration, app: &mut ExabindApp, f: &mut Frame<'_>) {
     let area = f.area();
     app.process_effects(elapsed, f.buffer_mut(), area);
 }
 
-fn ui(
-    f: &mut Frame<'_>,
-    stateful_widgets: &StatefulWidgets,
-    ui_state: &mut ui_state::UiState
-) {
+fn ui(f: &mut Frame<'_>, stateful_widgets: &StatefulWidgets, ui_state: &mut ui_state::UiState) {
     use ratatui::prelude::Widget;
 
     ui_state.screen = f.area().as_size();
@@ -118,8 +109,8 @@ fn ui(
     let area = f.area();
 
     // shortcuts window
-    stateful_widgets.shortcuts
+    stateful_widgets
+        .shortcuts
         .iter()
         .for_each(|w| w.render_ref(area, f.buffer_mut(), &mut ui_state.shortcuts));
 }
-

@@ -11,11 +11,14 @@ impl StatefulWidget for ShortcutCategoriesWidget {
     type State = ListState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let categories: Vec<_> = self.categories.iter()
+        let categories: Vec<_> = self
+            .categories
+            .iter()
             .map(|(name, count)| format!("{} ({})", name, count))
             .collect();
 
-        let max_width = categories.iter()
+        let max_width = categories
+            .iter()
             .map(|s| s.char_indices().count())
             .max()
             .unwrap_or(0);

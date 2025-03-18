@@ -1,7 +1,7 @@
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
-use crate::fx::effect::{outline_selected_category_key_caps, starting_up, UniqueEffectId};
 use crate::fx::effect;
+use crate::fx::effect::{outline_selected_category_key_caps, starting_up, UniqueEffectId};
 use crate::input::InputProcessor;
 use crate::keymap::KeyMap;
 use crate::shortcut::Shortcut;
@@ -47,7 +47,10 @@ impl KeyMapContext {
     }
 
     pub fn unordered_categories(&self) -> Vec<&str> {
-        self.categories.iter().map(|(cat, _)| cat.as_str()).collect()
+        self.categories
+            .iter()
+            .map(|(cat, _)| cat.as_str())
+            .collect()
     }
 
     pub fn deselect_category(&mut self) {
@@ -58,9 +61,9 @@ impl KeyMapContext {
     pub fn next_category(&mut self) {
         let last_index = self.categories.len() - 1;
         match self.current_category {
-            None                           => self.current_category = Some(0),
+            None => self.current_category = Some(0),
             Some(idx) if last_index == idx => self.current_category = Some(0),
-            Some(idx)                      => self.current_category = Some(idx + 1)
+            Some(idx) => self.current_category = Some(idx + 1),
         }
 
         self.current_action = None;
@@ -68,8 +71,8 @@ impl KeyMapContext {
 
     pub fn previous_category(&mut self) {
         match self.current_category {
-            None      => self.current_category = Some(0),
-            Some(0)   => self.current_category = Some(self.categories.len() - 1),
+            None => self.current_category = Some(0),
+            Some(0) => self.current_category = Some(self.categories.len() - 1),
             Some(idx) => self.current_category = Some(idx - 1),
         }
         self.current_action = None;
@@ -90,23 +93,30 @@ impl KeyMapContext {
     }
 
     pub fn current_modifier_keys(&self) -> Vec<KeyCap> {
-       let layout = AnsiKeyboardTklLayout
-           .layout();
-
+        let layout = AnsiKeyboardTklLayout.layout();
 
         // fixme: don't do this
         let find_mod_key = |modifier_key_code| {
-            layout.iter()
+            layout
+                .iter()
                 .find(|key| key.key_code == KeyCode::Modifier(modifier_key_code))
                 .expect("modifier key lookup should always succeed")
                 .clone()
         };
 
         let mut modifiers = Vec::new();
-        if self.filter_key_control { modifiers.push(find_mod_key(LeftControl)); }
-        if self.filter_key_meta    { modifiers.push(find_mod_key(LeftMeta)); }
-        if self.filter_key_alt     { modifiers.push(find_mod_key(LeftAlt)); }
-        if self.filter_key_shift   { modifiers.push(find_mod_key(LeftShift)); }
+        if self.filter_key_control {
+            modifiers.push(find_mod_key(LeftControl));
+        }
+        if self.filter_key_meta {
+            modifiers.push(find_mod_key(LeftMeta));
+        }
+        if self.filter_key_alt {
+            modifiers.push(find_mod_key(LeftAlt));
+        }
+        if self.filter_key_shift {
+            modifiers.push(find_mod_key(LeftShift));
+        }
 
         modifiers
     }
@@ -129,7 +139,7 @@ impl KeyMapContext {
     pub fn filtered_actions(&self) -> Vec<BoundShortcut> {
         match self.category() {
             Some(category) => self.filtered_actions_by_category(category).1,
-            None           => Vec::new(),
+            None => Vec::new(),
         }
     }
 
@@ -144,36 +154,37 @@ impl KeyMapContext {
         };
 
         let uses_active_modifier_keys = |shortcut: &Shortcut| -> bool {
-            !uses_any_modifier_keys() || (
-                self.filter_key_control  == shortcut.uses_modifier(LeftControl)
+            !uses_any_modifier_keys()
+                || (self.filter_key_control == shortcut.uses_modifier(LeftControl)
                     && self.filter_key_shift == shortcut.uses_modifier(LeftShift)
-                    && self.filter_key_alt   == shortcut.uses_modifier(LeftAlt)
-                    && self.filter_key_meta  == shortcut.uses_modifier(LeftMeta)
-            )
+                    && self.filter_key_alt == shortcut.uses_modifier(LeftAlt)
+                    && self.filter_key_meta == shortcut.uses_modifier(LeftMeta))
         };
 
-        let index_of_category = keymap.categories().iter().position(|(cat, _)| cat == category).unwrap();
-        (index_of_category, keymap.actions_by_category(category)
+        let index_of_category = keymap
+            .categories()
             .iter()
-            .flat_map(|action| {
-                action.shortcuts()
-                    .iter()
-                    .map(|shortcut| BoundShortcut {
+            .position(|(cat, _)| cat == category)
+            .unwrap();
+        (
+            index_of_category,
+            keymap
+                .actions_by_category(category)
+                .iter()
+                .flat_map(|action| {
+                    action.shortcuts().iter().map(|shortcut| BoundShortcut {
                         label: action.name().to_string(),
                         enabled_in_ui: uses_active_modifier_keys(shortcut),
                         shortcut: shortcut.clone(),
                     })
-            })
-            .collect())
+                })
+                .collect(),
+        )
     }
 }
 
 impl ExabindApp {
-    pub fn new(
-        ui_state: &mut UiState,
-        sender: Sender<ExabindEvent>,
-        keymap: KeyMap,
-    ) -> Self {
+    pub fn new(ui_state: &mut UiState, sender: Sender<ExabindEvent>, keymap: KeyMap) -> Self {
         let categories = keymap.categories();
         let last_index = categories.len() - 1;
         let keymap_context = KeyMapContext {
@@ -241,10 +252,10 @@ impl ExabindApp {
         self.keymap_context.apply_event(&event);
 
         match event {
-            Tick                      => (),
-            Shutdown                  => self.running = false,
-            KeyPress(_)               => self.input_processor.apply(&event),
-            StartupAnimation          => ui_state.register_kbd_effect(starting_up()),
+            Tick => (),
+            Shutdown => self.running = false,
+            KeyPress(_) => self.input_processor.apply(&event),
+            StartupAnimation => ui_state.register_kbd_effect(starting_up()),
             AutoSelectCategory => {
                 if self.keymap_context.category().is_none() {
                     self.dispatch(NextCategory)
@@ -254,27 +265,28 @@ impl ExabindApp {
                 ui_state.screen = Size::new(w, h);
                 self.update_selected_category(ui_state);
             }
-            DeselectCategory          => {
+            DeselectCategory => {
                 self.keymap_context.deselect_category();
                 self.stage_mut()
                     .add_unique_effect(UniqueEffectId::SelectedCategory, consume_tick());
-                ui_state.kbd_effects_mut()
+                ui_state
+                    .kbd_effects_mut()
                     .add_unique_effect(UniqueEffectId::KeyCapOutline, consume_tick());
-            },
-            NextCategory              => {
+            }
+            NextCategory => {
                 self.keymap_context.next_category();
                 self.update_selected_category(ui_state);
-            },
-            PreviousCategory          => {
+            }
+            PreviousCategory => {
                 self.keymap_context.previous_category();
                 self.update_selected_category(ui_state);
-            },
+            }
             ToggleFilterKey(key_code) => {
                 self.keymap_context.toggle_filter_key(key_code);
                 self.update_selected_category(ui_state);
 
                 ui_state.update_active_modifiers(self.keymap_context.current_modifier_keys());
-            },
+            }
             CategoryWidgetNavigationOrder(_) => {
                 let size = ui_state.kbd_size();
                 let stage = ui_state.kbd_effects_mut();
@@ -282,9 +294,11 @@ impl ExabindApp {
                     let fx = outline_selected_category_key_caps(stage, self.keymap_context(), size);
                     stage.add_effect(fx);
                 }
-            },
+            }
             SelectedCategoryFxSandbox => {
-                let widget = self.stateful_widgets.selected_category_widget(&self.keymap_context);
+                let widget = self
+                    .stateful_widgets
+                    .selected_category_widget(&self.keymap_context);
                 let area = widget.area();
                 let fx = effect::open_category(widget.bg_color(), area);
                 self.register_effect(fx);
@@ -297,9 +311,11 @@ impl ExabindApp {
             return;
         }
 
-        self.stateful_widgets.update_shortcut_category(&self.keymap_context, ui_state);
+        self.stateful_widgets
+            .update_shortcut_category(&self.keymap_context, ui_state);
 
-        let widget = self.stateful_widgets
+        let widget = self
+            .stateful_widgets
             .selected_category_widget(&self.keymap_context);
 
         let area = widget.area();
@@ -309,12 +325,12 @@ impl ExabindApp {
             fx::fade_from_fg(color, (200, Interpolation::BounceInOut))
                 .with_area(area)
                 .with_filter(CellFilter::Outer(Margin::new(1, 1))),
-        ]) ;
+        ]);
 
-        self.stage_mut().add_unique_effect(UniqueEffectId::SelectedCategory, fx);
+        self.stage_mut()
+            .add_unique_effect(UniqueEffectId::SelectedCategory, fx);
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub struct BoundShortcut {

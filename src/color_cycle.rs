@@ -10,7 +10,6 @@ pub struct PingPongCycle;
 #[derive(Clone, Debug)]
 pub struct RepeatingCycle;
 
-
 #[derive(Clone, Debug)]
 pub struct ColorCycle<T: IndexResolver<Color>> {
     colors: Vec<Color>,
@@ -41,19 +40,23 @@ impl IndexResolver<Color> for RepeatingCycle {
 pub type PingPongColorCycle = ColorCycle<PingPongCycle>;
 pub type RepeatingColorCycle = ColorCycle<RepeatingCycle>;
 
-impl<T> ColorCycle<T> where T: IndexResolver<Color> {
+impl<T> ColorCycle<T>
+where
+    T: IndexResolver<Color>,
+{
     pub fn new(initial_color: Color, colors: &[(usize, Color)]) -> Self {
-        let mut gradient = vec![initial_color];
-        colors.iter().fold((0, initial_color), |(_, prev_color), (len, color)| {
-            (0..=*len).for_each(|i| {
-                let color = prev_color.lerp(color, i as f32 / *len as f32);
-                gradient.push(color);
+        let mut gradient = Vec::with_capacity(colors.iter().fold(0, |c, (n, _)| c + *n));
+        colors
+            .iter()
+            .fold(initial_color, |prev_color, (len, color)| {
+                gradient.extend((0..=*len).map(|i| prev_color.lerp(color, i as f32 / *len as f32)));
+                *color
             });
-            gradient.push(*color);
-            (*len, *color)
-        });
 
-        Self { colors: gradient, _marker: std::marker::PhantomData }
+        Self {
+            colors: gradient,
+            _marker: std::marker::PhantomData,
+        }
     }
 
     pub fn color_at(&self, idx: usize) -> &Color {

@@ -1,13 +1,16 @@
-use std::collections::HashMap;
+use crate::app::{BoundShortcut, KeyMapContext};
+use crate::styling::{ExabindTheme, Theme};
+use crate::widget::{
+    draw_key_border, render_border_with, supplant_key_code, AnsiKeyboardTklLayout, KeyCap,
+    KeyboardLayout,
+};
 use bit_set::BitSet;
 use crossterm::event::KeyCode;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Position, Rect};
 use ratatui::style::Style;
+use std::collections::HashMap;
 use tachyonfx::{blit_buffer, CellFilter, Duration, Effect, Shader};
-use crate::app::{BoundShortcut, KeyMapContext};
-use crate::styling::{ExabindTheme, Theme};
-use crate::widget::{draw_key_border, render_border_with, supplant_key_code, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
 
 #[derive(Clone, Debug)]
 pub struct KeyCapOutline {
@@ -16,17 +19,15 @@ pub struct KeyCapOutline {
 }
 
 impl KeyCapOutline {
-    pub fn new(
-        buffer: Buffer,
-        context: &KeyMapContext,
-    ) -> Self {
-        let style = Theme.kbd_cap_outline_category(context.sorted_category_idx().expect("no category selected"));
+    pub fn new(buffer: Buffer, context: &KeyMapContext) -> Self {
+        let style = Theme
+            .kbd_cap_outline_category(context.sorted_category_idx().expect("no category selected"));
         let mut buffer = buffer;
         Self::update_shortcuts_outline(&mut buffer, context.filtered_actions(), style);
 
         Self {
             buffer,
-            cell_filter: None
+            cell_filter: None,
         }
     }
 }
@@ -62,22 +63,17 @@ impl Shader for KeyCapOutline {
 }
 
 impl KeyCapOutline {
-    fn update_shortcuts_outline(
-        buf: &mut Buffer,
-        shortcuts: Vec<BoundShortcut>,
-        style: Style,
-    ) {
-        let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout
-            .key_cap_lookup();
+    fn update_shortcuts_outline(buf: &mut Buffer, shortcuts: Vec<BoundShortcut>, style: Style) {
+        let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout.key_cap_lookup();
 
         let keys_to_outline: Vec<KeyCap> = shortcuts
             .iter()
             .filter(|action| action.enabled_in_ui())
             .map(|action| action.shortcut())
             .flat_map(|shortcut| shortcut.keystroke())
-            .filter_map(|key_code| key_caps.get(&supplant_key_code(*key_code))).cloned()
+            .filter_map(|key_code| key_caps.get(&supplant_key_code(*key_code)))
+            .cloned()
             .collect();
-
 
         let mut key_caps: Vec<KeyCap> = keys_to_outline.to_vec();
 
@@ -91,8 +87,7 @@ impl KeyCapOutline {
         key_caps.sort_by_key(keycap_cmp);
         key_caps.dedup();
 
-        outline_key_cap_borders(&key_caps, style)
-            .process(Duration::from_millis(17), buf, area);
+        outline_key_cap_borders(&key_caps, style).process(Duration::from_millis(17), buf, area);
     }
 }
 
@@ -118,7 +113,8 @@ fn outline_key_cap_borders(key_caps: &[KeyCap], border_style: Style) -> Effect {
             cell.skip = false;
         });
 
-        key_caps.iter()
+        key_caps
+            .iter()
             .map(|k| k.area)
             .flat_map(|a| a.positions())
             .for_each(|pos| {
@@ -130,9 +126,7 @@ fn outline_key_cap_borders(key_caps: &[KeyCap], border_style: Style) -> Effect {
             let mut neighbors = [false; 4];
             let idx = index_of_pos(area, pos) as isize;
 
-            let is_set = |idx: isize| -> bool {
-                idx >= 0 && key_cap_cells.contains(idx as usize)
-            };
+            let is_set = |idx: isize| -> bool { idx >= 0 && key_cap_cells.contains(idx as usize) };
 
             if pos.x > 0 && pos.x > area.left() {
                 neighbors[0] = is_set(idx - area_width - 1);
@@ -160,47 +154,47 @@ fn outline_key_cap_borders(key_caps: &[KeyCap], border_style: Style) -> Effect {
                         cell.skip = true;
                         cell.set_char('X');
                     }
-                },
+                }
                 ("╨", [true, true, _, _]) => {
                     cell.skip = false;
                     cell.set_char('─');
-                },
+                }
                 ("╥", [_, _, true, true]) => {
                     cell.skip = false;
                     cell.set_char('─');
-                },
+                }
                 ("┬", [true, true, true, false]) => {
                     cell.skip = false;
                     cell.set_char('┌');
-                },
+                }
                 ("┬", [true, true, false, true]) => {
                     cell.skip = false;
                     cell.set_char('┐');
-                },
+                }
                 ("┴", [true, false, true, true]) => {
                     cell.skip = false;
                     cell.set_char('└');
-                },
+                }
                 ("┴", [false, true, true, true]) => {
                     cell.skip = false;
                     cell.set_char('┘');
-                },
+                }
                 ("┤", [true, false, true, false]) => {
                     cell.skip = false;
                     cell.set_char('│');
-                },
+                }
                 ("├", [false, true, false, true]) => {
                     cell.skip = false;
                     cell.set_char('│');
-                },
-                ("╫", [true, false, true, true])  => {
+                }
+                ("╫", [true, false, true, true]) => {
                     cell.skip = false;
                     cell.set_char('└');
-                },
+                }
                 ("╫", [false, true, true, true]) => {
                     cell.skip = false;
                     cell.set_char('┘');
-                },
+                }
                 _ => {
                     // cell.skip = false;
                 }

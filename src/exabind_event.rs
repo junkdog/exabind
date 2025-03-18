@@ -15,5 +15,5 @@ pub enum ExabindEvent {
     NextCategory,
     PreviousCategory,
     ToggleFilterKey(ModifierKeyCode),
-    CategoryWidgetNavigationOrder(Vec<usize>)
+    CategoryWidgetNavigationOrder(Vec<usize>),
 }

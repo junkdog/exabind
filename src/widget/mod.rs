@@ -1,14 +1,16 @@
 mod keyboard;
-mod shortcuts;
 mod shortcut_categories;
+mod shortcuts;
 
-pub use keyboard::*;
-pub use shortcuts::*;
 use crate::app::KeyMapContext;
 use crate::styling::{ExabindTheme, Theme};
+pub use keyboard::*;
+pub use shortcuts::*;
 
 pub fn shortcut_widgets(context: &KeyMapContext) -> Vec<ShortcutsWidget> {
-    context.unordered_categories().iter()
+    context
+        .unordered_categories()
+        .iter()
         .map(|category| shortcut_widget(context, category))
         .collect()
 }
@@ -22,6 +24,6 @@ fn shortcut_widget(context: &KeyMapContext, category: &str) -> ShortcutsWidget {
         Theme.shortcuts_widget_keystroke(),
         Theme.shortcuts_widget_label(),
         base_color,
-        actions
+        actions,
     )
 }
