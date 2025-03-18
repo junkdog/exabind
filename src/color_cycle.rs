@@ -45,7 +45,7 @@ where
     T: IndexResolver<Color>,
 {
     pub fn new(initial_color: Color, colors: &[(usize, Color)]) -> Self {
-        let mut gradient = vec![initial_color];
+        let mut gradient = Vec::with_capacity(colors.iter().fold(0, |c, (n, _)| c + *n));
         colors
             .iter()
             .fold(initial_color, |prev_color, (len, color)| {
