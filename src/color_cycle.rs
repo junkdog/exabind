@@ -48,13 +48,13 @@ where
         let mut gradient = vec![initial_color];
         colors
             .iter()
-            .fold((0, initial_color), |(_, prev_color), (len, color)| {
+            .fold(initial_color, |prev_color, (len, color)| {
                 (0..=*len).for_each(|i| {
                     let color = prev_color.lerp(color, i as f32 / *len as f32);
                     gradient.push(color);
                 });
                 gradient.push(*color);
-                (*len, *color)
+                *color
             });
 
         Self {
