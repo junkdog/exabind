@@ -10,9 +10,7 @@ pub struct InputProcessor {
 
 impl InputProcessor {
     pub fn new(sender: Sender<ExabindEvent>) -> Self {
-        Self {
-            sender,
-        }
+        Self { sender }
     }
 
     pub fn apply(&self, event: &ExabindEvent) {
@@ -26,18 +24,18 @@ impl InputProcessor {
     fn resolve_key_pressed(event: &KeyEvent) -> Option<ExabindEvent> {
         use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
         match event.code {
-            Char('q')     => Some(ExabindEvent::Shutdown),
-            Char('a')     => Some(ExabindEvent::SelectedCategoryFxSandbox),
-            Char('s')     => Some(ExabindEvent::StartupAnimation),
-            Up            => Some(ExabindEvent::PreviousCategory),
-            Down          => Some(ExabindEvent::NextCategory),
-            Esc           => Some(ExabindEvent::DeselectCategory),
+            Char('q') => Some(ExabindEvent::Shutdown),
+            Char('a') => Some(ExabindEvent::SelectedCategoryFxSandbox),
+            Char('s') => Some(ExabindEvent::StartupAnimation),
+            Up => Some(ExabindEvent::PreviousCategory),
+            Down => Some(ExabindEvent::NextCategory),
+            Esc => Some(ExabindEvent::DeselectCategory),
             Modifier(mfc) => Some(ExabindEvent::ToggleFilterKey(mfc)),
-            Char('1')     => Some(ExabindEvent::ToggleFilterKey(LeftShift)),
-            Char('2')     => Some(ExabindEvent::ToggleFilterKey(LeftControl)),
-            Char('3')     => Some(ExabindEvent::ToggleFilterKey(LeftMeta)),
-            Char('4')     => Some(ExabindEvent::ToggleFilterKey(LeftAlt)),
-            _             => None,
+            Char('1') => Some(ExabindEvent::ToggleFilterKey(LeftShift)),
+            Char('2') => Some(ExabindEvent::ToggleFilterKey(LeftControl)),
+            Char('3') => Some(ExabindEvent::ToggleFilterKey(LeftMeta)),
+            Char('4') => Some(ExabindEvent::ToggleFilterKey(LeftAlt)),
+            _ => None,
         }
     }
 }

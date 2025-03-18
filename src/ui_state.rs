@@ -1,3 +1,4 @@
+use crate::fx::effect::UniqueEffectId;
 use crate::styling::{ExabindTheme, Theme, CATPPUCCIN};
 use crate::widget::{KeyCap, KeyboardLayout, KeyboardWidget, ShortcutsWidgetState};
 use ratatui::buffer::Buffer;
@@ -5,7 +6,6 @@ use ratatui::layout::{Offset, Rect, Size};
 use ratatui::style::{Modifier, Style};
 use ratatui::widgets::{Block, Widget};
 use tachyonfx::{ref_count, BufferRenderer, Duration, Effect, EffectManager, RefCount};
-use crate::fx::effect::UniqueEffectId;
 
 /// Represents the overall UI state of the application, managing the screen dimensions,
 /// keyboard state, and shortcuts widget state.
@@ -30,7 +30,7 @@ struct KeyboardState {
     /// Currently active modifier keys
     active_modifiers: Vec<KeyCap>,
     /// Current offset for keyboard rendering position
-    offset: Offset
+    offset: Offset,
 }
 impl UiState {
     pub fn new() -> Self {
@@ -43,7 +43,9 @@ impl UiState {
                 active_modifiers: Vec::new(),
                 offset: Offset::default(),
             },
-            shortcuts: ShortcutsWidgetState { table_state: Default::default() },
+            shortcuts: ShortcutsWidgetState {
+                table_state: Default::default(),
+            },
             screen: Size::default(),
         }
     }
@@ -95,14 +97,20 @@ impl UiState {
         let area = work_buf.area;
 
         // process effects (led effects, shortcut outlines, etc)
-        self.kbd.effects.process_effects(elapsed, &mut work_buf, area);
+        self.kbd
+            .effects
+            .process_effects(elapsed, &mut work_buf, area);
 
         // render active modifiers
         KeyboardWidget::new_with_style(
             self.kbd.active_modifiers.clone(),
-            Style::default().fg(CATPPUCCIN.peach).bg(CATPPUCCIN.surface0).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(CATPPUCCIN.peach)
+                .bg(CATPPUCCIN.surface0)
+                .add_modifier(Modifier::BOLD),
             None,
-        ).render(area, &mut work_buf);
+        )
+        .render(area, &mut work_buf);
     }
 
     /// Returns a mutable reference to the keyboard effects stage.
@@ -119,7 +127,9 @@ impl UiState {
     /// # Arguments
     /// * `destination` - Target buffer to render the keyboard into
     pub fn render_kbd(&self, destination: &mut Buffer) {
-        self.kbd.buf_work.borrow()
+        self.kbd
+            .buf_work
+            .borrow()
             .render_buffer(self.kbd.offset, destination);
     }
 
@@ -129,7 +139,9 @@ impl UiState {
     /// applying effects and modifications.
     fn update_kbd_work_buffer(&mut self) {
         let mut buf = self.kbd.buf_work.borrow_mut();
-        self.kbd.buf_base.borrow()
+        self.kbd
+            .buf_base
+            .borrow()
             .render_buffer(Offset::default(), &mut buf);
     }
 }

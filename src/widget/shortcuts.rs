@@ -30,13 +30,15 @@ impl ShortcutsWidget {
         base_color: Color,
         shortcuts: Vec<BoundShortcut>,
     ) -> Self {
-        let width_name = shortcuts.iter()
+        let width_name = shortcuts
+            .iter()
             .map(BoundShortcut::name)
             .map(str::len)
             .max()
             .unwrap_or(0);
 
-        let width_shortcut = shortcuts.iter()
+        let width_shortcut = shortcuts
+            .iter()
             .map(BoundShortcut::shortcut)
             .map(|s| s.to_string().char_indices().count())
             .max()
@@ -61,17 +63,25 @@ impl ShortcutsWidget {
         title2.insert(0, ' ');
         title2.push_str(" ◢");
 
-        let table = Table::new(rows(&shortcuts, action_name_style, keystroke_style), constraints)
-            .block(Block::bordered()
+        let table = Table::new(
+            rows(&shortcuts, action_name_style, keystroke_style),
+            constraints,
+        )
+        .block(
+            Block::bordered()
                 .border_set(SHORTCUT_SET_2)
-                .title(Span::styled(title2.clone(), border_style
-                    .bg(bg_color)
-                    .add_modifier(Modifier::BOLD)
-                    .add_modifier(Modifier::REVERSED)))
-                .style(border_style))
-            .style(Style::default().bg(bg_color))
-            .column_spacing(1)
-            .row_highlight_style(selected_row_style);
+                .title(Span::styled(
+                    title2.clone(),
+                    border_style
+                        .bg(bg_color)
+                        .add_modifier(Modifier::BOLD)
+                        .add_modifier(Modifier::REVERSED),
+                ))
+                .style(border_style),
+        )
+        .style(Style::default().bg(bg_color))
+        .column_spacing(1)
+        .row_highlight_style(selected_row_style);
 
         Self {
             shortcuts,
@@ -96,9 +106,7 @@ impl ShortcutsWidget {
         // 3 from margin + delimiter between name and shortcut
         let width = self.max_shortcut_title_width + self.max_shortcut_keystroke_width + 3;
 
-        let height = self.shortcuts.iter()
-            .map(BoundShortcut::shortcut)
-            .count() + 2; // 2 from margin
+        let height = self.shortcuts.iter().map(BoundShortcut::shortcut).count() + 2; // 2 from margin
 
         Rect::new(self.position.x, self.position.y, width, height as _)
     }
@@ -112,19 +120,17 @@ fn shortcut_as_table_row<'a>(
     let shortcut = bound_shortcut.shortcut();
 
     if bound_shortcut.enabled_in_ui() {
-        let name = Text::from(bound_shortcut.name().to_string())
-            .style(action_name_style);
+        let name = Text::from(bound_shortcut.name().to_string()).style(action_name_style);
 
-        let shortcuts = Text::from(shortcut.to_string())
-            .style(keystroke_style);
+        let shortcuts = Text::from(shortcut.to_string()).style(keystroke_style);
 
         Row::new([shortcuts, name])
     } else {
         let name = Text::from(bound_shortcut.name().to_string())
             .style(Style::default().fg(Catppuccin::new().surface2));
 
-        let shortcuts = Text::from(shortcut.to_string())
-            .style(Style::default().fg(Catppuccin::new().surface2));
+        let shortcuts =
+            Text::from(shortcut.to_string()).style(Style::default().fg(Catppuccin::new().surface2));
 
         Row::new([shortcuts, name])
     }
@@ -135,16 +141,10 @@ fn rows(
     action_name_style: Style,
     keystroke_style: Style,
 ) -> impl Iterator<Item = Row<'static>> + '_ {
-    shortcuts.iter()
-        .map(move |action| {
-            shortcut_as_table_row(
-                action,
-                action_name_style,
-                keystroke_style,
-            )
-        })
+    shortcuts
+        .iter()
+        .map(move |action| shortcut_as_table_row(action, action_name_style, keystroke_style))
 }
-
 
 impl StatefulWidgetRef for ShortcutsWidget {
     type State = ShortcutsWidgetState;
@@ -174,12 +174,12 @@ impl StatefulWidgetRef for ShortcutsWidget {
 }
 
 const SHORTCUT_SET_2: Set = Set {
-    top_left:          "◢",
-    top_right:         "▜",
-    bottom_left:       "▔",
-    bottom_right:      "▔",
-    vertical_left:     "▏",
-    vertical_right:    "▕",
-    horizontal_top:    "▔",
+    top_left: "◢",
+    top_right: "▜",
+    bottom_left: "▔",
+    bottom_right: "▔",
+    vertical_left: "▏",
+    vertical_right: "▕",
+    horizontal_top: "▔",
     horizontal_bottom: "▔",
 };

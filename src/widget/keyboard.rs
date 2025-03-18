@@ -16,7 +16,6 @@ pub struct KeyboardWidget {
     border_style: Option<Style>,
 }
 
-
 pub trait KeyboardLayout {
     fn key_area(&self, key_code: KeyCode) -> Rect;
     fn key_position(&self, key_code: KeyCode) -> Position;
@@ -70,8 +69,8 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
                 ModifierKeyCode::RightHyper => Size::new(SUPER_W, KEY_H),
                 ModifierKeyCode::RightMeta => Size::new(SUPER_W, KEY_H),
                 _ => Size::new(KEY_W, KEY_H),
-            }
-            _ => Size::new(KEY_W, KEY_H)
+            },
+            _ => Size::new(KEY_W, KEY_H),
         };
 
         (self.key_position(key_code), size).into()
@@ -85,39 +84,50 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             let start = KEY_W - 1;
 
             // group gap is ~3
-            let group_gap = 2 * (((n as u16 - 1) / 4));
+            let group_gap = 2 * ((n as u16 - 1) / 4);
 
             start + group_gap + n as u16 * (KEY_W - 1)
         };
 
         let key_offset = |n: u16| -> u16 { n * (KEY_W - 1) };
 
-
         use KeyCode::*;
         use ModifierKeyCode::*;
 
         let (x, y) = match key_code {
-            Esc                               => (0, 0),
-            F(n)                              => (fn_key_x(n), 0),
+            Esc => (0, 0),
+            F(n) => (fn_key_x(n), 0),
             Char(c) if NUMBER_ROW.contains(c) => (offset(NUMBER_ROW, c), 3),
-            Char(c) if TOP_ROW.contains(c)    => (TAB_W - 1 + offset(TOP_ROW, c), 5),
+            Char(c) if TOP_ROW.contains(c) => (TAB_W - 1 + offset(TOP_ROW, c), 5),
             Char(c) if MIDDLE_ROW.contains(c) => (CAPSLOCK_W - 1 + offset(MIDDLE_ROW, c), 7),
             Char(c) if BOTTOM_ROW.contains(c) => (SHIFT_L_W - 1 + offset(BOTTOM_ROW, c), 9),
-            Char(' ')                         => (CTRL_L_W + SUPER_W + ALT_W - 3, 11),
-            Char(_)                           =>  panic!("Invalid key code: {:?}", key_code),
-            Modifier(LeftShift)    => (0, 9),
-            Modifier(RightShift)   => (SHIFT_L_W - 1 + key_offset(BOTTOM_ROW.len() as u16), 9),
-            Modifier(LeftControl)  => (0, 11),
-            Modifier(LeftSuper)    => (CTRL_L_W - 1, 11),
-            Modifier(LeftHyper)    => (CTRL_L_W - 1, 11),
-            Modifier(LeftMeta)     => (CTRL_L_W - 1, 11),
-            Modifier(LeftAlt)      => (CTRL_L_W + SUPER_W - 2, 11),
-            Modifier(RightAlt)     => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W - 4, 11),
-            Modifier(RightControl) => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W + KEY_W - 7, 11),
-            Modifier(RightSuper)   => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W - 6, 11),
-            Modifier(RightHyper)   => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W - 6, 11),
-            Modifier(RightMeta)    => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W - 6, 11),
-            Modifier(_)            => (0, 0), // ignore
+            Char(' ') => (CTRL_L_W + SUPER_W + ALT_W - 3, 11),
+            Char(_) => panic!("Invalid key code: {:?}", key_code),
+            Modifier(LeftShift) => (0, 9),
+            Modifier(RightShift) => (SHIFT_L_W - 1 + key_offset(BOTTOM_ROW.len() as u16), 9),
+            Modifier(LeftControl) => (0, 11),
+            Modifier(LeftSuper) => (CTRL_L_W - 1, 11),
+            Modifier(LeftHyper) => (CTRL_L_W - 1, 11),
+            Modifier(LeftMeta) => (CTRL_L_W - 1, 11),
+            Modifier(LeftAlt) => (CTRL_L_W + SUPER_W - 2, 11),
+            Modifier(RightAlt) => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W - 4, 11),
+            Modifier(RightControl) => (
+                CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W + KEY_W - 7,
+                11,
+            ),
+            Modifier(RightSuper) => (
+                CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W - 6,
+                11,
+            ),
+            Modifier(RightHyper) => (
+                CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W - 6,
+                11,
+            ),
+            Modifier(RightMeta) => (
+                CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W + MENU_W - 6,
+                11,
+            ),
+            Modifier(_) => (0, 0), // ignore
             Backspace => (key_offset(NUMBER_ROW.len() as u16), 3),
             Tab => (0, 5),
             CapsLock => (0, 7),
@@ -138,7 +148,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             NumLock => {
                 let p = self.key_position(Menu);
                 (p.x, p.y)
-            },
+            }
             PrintScreen => (NAV_KEY_X_START, 0),
             Pause => (NAV_KEY_X_START + key_offset(2), 0),
             Menu => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W - 5, 11),
@@ -185,16 +195,14 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
 
             // cursor keys
             Up, Left, Down, Right,
-        ].into()
+        ]
+        .into()
     }
 }
 
-pub fn render_border_with<F>(
-    key_caps: &[KeyCap],
-    buf: &mut Buffer,
-    mut draw_border_fn: F
-) where
-    F: FnMut(char, Position, &mut Cell)
+pub fn render_border_with<F>(key_caps: &[KeyCap], buf: &mut Buffer, mut draw_border_fn: F)
+where
+    F: FnMut(char, Position, &mut Cell),
 {
     for key_cap in key_caps {
         let area = key_cap.area;
@@ -219,7 +227,7 @@ pub fn render_border_with<F>(
             let pos = (x, y).into();
             let cell = &mut buf[pos];
             // if " ─".contains(cell.symbol()) {
-                draw_border_fn('─', pos, cell);
+            draw_border_fn('─', pos, cell);
             // }
         };
 
@@ -231,11 +239,7 @@ pub fn render_border_with<F>(
     }
 }
 
-pub fn render_border(
-    key_cap: KeyCap,
-    border_style: Style,
-    buf: &mut Buffer,
-) {
+pub fn render_border(key_cap: KeyCap, border_style: Style, buf: &mut Buffer) {
     render_border_with(&[key_cap], buf, |d, _pos, cell| {
         draw_key_border(d, cell);
         cell.set_style(border_style);
@@ -249,14 +253,8 @@ impl From<(KeyCode, Rect)> for KeyCap {
 }
 
 impl KeyboardWidget {
-    pub fn new(
-        keys: Vec<KeyCap>,
-    ) -> Self {
-        Self::new_with_style(
-            keys,
-            Theme.kbd_cap_text(),
-            Some(Theme.kbd_cap_border()),
-        )
+    pub fn new(keys: Vec<KeyCap>) -> Self {
+        Self::new_with_style(keys, Theme.kbd_cap_text(), Some(Theme.kbd_cap_border()))
     }
 
     pub fn new_with_style(
@@ -273,12 +271,9 @@ impl KeyboardWidget {
 }
 
 impl WidgetRef for KeyboardWidget {
-    fn render_ref(
-        &self,
-        _area: Rect,
-        buf: &mut Buffer
-    ) {
-        self.keys.iter()
+    fn render_ref(&self, _area: Rect, buf: &mut Buffer) {
+        self.keys
+            .iter()
             .map(|key| KeyCapWidget::new(key.clone(), self.cap_style, self.border_style))
             .for_each(|w| w.render(Rect::default(), buf));
     }
@@ -298,42 +293,23 @@ pub struct KeyCapWidget {
 }
 
 impl KeyCapWidget {
-    pub fn new(
-        key_cap: KeyCap,
-        cap_style: Style,
-        border_style: Option<Style>,
-    ) -> Self {
-
+    pub fn new(key_cap: KeyCap, cap_style: Style, border_style: Option<Style>) -> Self {
         let colors = Catppuccin::new();
 
         use KeyCode::*;
         let other_color = colors.mantle;
         let cap_style = match key_cap.key_code {
-            Esc
-            | Tab
-            | CapsLock
-            | Modifier(_)
-            | Menu
-            | Char(' ')
-            | Enter
-            | Backspace  => cap_style.bg(other_color),
+            Esc | Tab | CapsLock | Modifier(_) | Menu | Char(' ') | Enter | Backspace => {
+                cap_style.bg(other_color)
+            }
 
             F(_n @ 5..=8) => cap_style.bg(other_color),
 
-            Left
-            | Right
-            | Up
-            | Down  => cap_style.bg(other_color),
+            Left | Right | Up | Down => cap_style.bg(other_color),
 
-            Delete
-            | Insert
-            | Home
-            | End
-            | PageUp
-            | PageDown
-            | PrintScreen
-            | ScrollLock
-            | Pause => cap_style.bg(other_color),
+            Delete | Insert | Home | End | PageUp | PageDown | PrintScreen | ScrollLock | Pause => {
+                cap_style.bg(other_color)
+            }
 
             _ => cap_style,
         };
@@ -395,7 +371,6 @@ impl KeyCapWidget {
             _ => Alignment::Left,
         };
 
-
         Text::from(Span::from(key_string))
             .style(self.cap_style)
             .alignment(alignment)
@@ -405,10 +380,7 @@ impl KeyCapWidget {
 
 impl KeyCap {
     pub fn new(key_code: KeyCode, area: Rect) -> Self {
-        Self {
-            key_code,
-            area,
-        }
+        Self { key_code, area }
     }
 }
 
@@ -430,10 +402,7 @@ impl WidgetRef for KeyCapWidget {
     }
 }
 
-pub fn draw_key_border(
-    decorate: char,
-    cell: &mut Cell,
-) {
+pub fn draw_key_border(decorate: char, cell: &mut Cell) {
     let current = cell.symbol().chars().next().unwrap();
     match decorate {
         '└' => match current {
@@ -488,7 +457,7 @@ pub fn draw_key_border(
             ' ' | '─' => cell.set_char('─'),
             '┘' | '└' => cell.set_char('┴'),
             '╨' | '╥' => cell.set_char(current),
-            _         => cell.set_char('#'), // should never happen
+            _ => cell.set_char('#'), // should never happen
         },
         c => panic!("Invalid border character: {}", c),
     };
@@ -547,4 +516,3 @@ const SPACE_W: u16 = 31;
 
 const SUPER_W: u16 = 6;
 const MENU_W: u16 = 6;
-
