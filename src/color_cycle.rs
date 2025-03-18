@@ -49,11 +49,7 @@ where
         colors
             .iter()
             .fold(initial_color, |prev_color, (len, color)| {
-                (0..=*len).for_each(|i| {
-                    let color = prev_color.lerp(color, i as f32 / *len as f32);
-                    gradient.push(color);
-                });
-                gradient.push(*color);
+                gradient.extend((0..=*len).map(|i| prev_color.lerp(color, i as f32 / *len as f32)));
                 *color
             });
 
