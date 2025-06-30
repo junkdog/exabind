@@ -1,17 +1,9 @@
-[package]
-name = "exabind"
-version = "0.1.0-dev"
-edition = "2021"
-
-[dependencies]
-anpa = "0.9.0"
-bit-set = "0.8.0"
-crossterm = "0.28.1"
-ratatui = { version = "0.29.0", features = ["unstable-widget-ref"] }
-tachyonfx = "0.15.0"
-rectangle-pack = "0.4.2"
-clap = { version = "4.5.21", features = ["derive"] }
-dirs = "5.0.1"
+[workspace]
+members = [
+    "core",
+    "tui",
+]
+resolver = "2"
 
 [profile.release-optimized]
 inherits = "release"

@@ -1,0 +1,16 @@
+[package]
+name = "exabind"
+version = "0.1.0-dev"
+edition = "2021"
+
+[[bin]]
+name = "exabind"
+path = "src/main.rs"
+
+[dependencies]
+exabind-core = { path = "../core" }
+crossterm = "0.28.1"
+ratatui = { version = "0.29.0", features = ["unstable-widget-ref"] }
+tachyonfx = "0.15.0"
+rectangle-pack = "0.4.2"
+bit-set = "0.8.0"

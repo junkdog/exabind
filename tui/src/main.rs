@@ -5,24 +5,17 @@ mod dispatcher;
 mod app;
 mod input;
 mod tui;
-mod parser;
-mod crossterm;
 mod styling;
 mod ui_state;
-mod shortcut;
-mod keymap;
 mod stateful_widgets;
 mod fx;
 mod color_cycle;
-mod args;
 
 use app::ExabindApp;
 
-use crate::args::parse_args;
+use exabind_core::{parse_args, IntoKeyMap, parser::kde::parse_kglobalshortcuts};
 use crate::event_handler::EventHandler;
 use crate::fx::effect::{open_all_categories, starting_up};
-use crate::keymap::IntoKeyMap;
-use crate::parser::kde::parse_kglobalshortcuts;
 use crate::stateful_widgets::StatefulWidgets;
 use crate::styling::CATPPUCCIN;
 use crate::tui::Tui;

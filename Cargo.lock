@@ -329,14 +329,23 @@ dependencies = [
 name = "exabind"
 version = "0.1.0-dev"
 dependencies = [
+ "bit-set",
+ "crossterm",
+ "exabind-core",
+ "ratatui",
+ "rectangle-pack",
+ "tachyonfx",
+]
+
+[[package]]
+name = "exabind-core"
+version = "0.1.0-dev"
+dependencies = [
  "anpa",
  "bit-set",
  "clap",
  "crossterm",
  "dirs",
- "ratatui",
- "rectangle-pack",
- "tachyonfx",
 ]
 
 [[package]]
