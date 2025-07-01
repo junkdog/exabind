@@ -1,25 +1,14 @@
-mod exabind_event;
-mod widget;
-mod event_handler;
-mod dispatcher;
-mod app;
-mod input;
-mod tui;
-mod styling;
-mod ui_state;
-mod stateful_widgets;
-mod fx;
-mod color_cycle;
-
-use app::ExabindApp;
-
-use exabind_core::{parse_args, IntoKeyMap, parser::kde::parse_kglobalshortcuts};
-use crate::event_handler::EventHandler;
-use crate::fx::effect::{open_all_categories, starting_up};
-use crate::stateful_widgets::StatefulWidgets;
-use crate::styling::CATPPUCCIN;
-use crate::tui::Tui;
-use crate::widget::AnsiKeyboardTklLayout;
+use exabind_core::{
+    parse_args, IntoKeyMap, parser::kde::parse_kglobalshortcuts,
+    app::ExabindApp,
+    event_handler::EventHandler,
+    fx::effect::{open_all_categories, starting_up},
+    stateful_widgets::StatefulWidgets,
+    styling::CATPPUCCIN,
+    tui::Tui,
+    widget::AnsiKeyboardTklLayout,
+    ui_state,
+};
 use ::crossterm::event::{KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 use ::crossterm::execute;
 use ratatui::prelude::Frame;

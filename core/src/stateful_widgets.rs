@@ -8,7 +8,7 @@ use rectangle_pack::{contains_smallest_box, pack_rects, volume_heuristic, Groupe
 use std::collections::BTreeMap;
 use std::sync::mpsc::Sender;
 
-pub(super) struct StatefulWidgets {
+pub struct StatefulWidgets {
     pub shortcuts: Vec<ShortcutsWidget>,
     sender: Sender<ExabindEvent>,
 }

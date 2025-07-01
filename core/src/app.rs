@@ -3,7 +3,7 @@ use crate::exabind_event::ExabindEvent;
 use crate::fx::effect::{outline_selected_category_key_caps, starting_up, UniqueEffectId};
 use crate::fx::effect;
 use crate::input::InputProcessor;
-use exabind_core::{KeyMap, Shortcut};
+use crate::{KeyMap, Shortcut};
 use crate::stateful_widgets::StatefulWidgets;
 use crate::ui_state::UiState;
 use crate::widget::{AnsiKeyboardTklLayout, KeyCap, KeyboardLayout};
