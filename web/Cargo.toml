@@ -1,0 +1,16 @@
+[package]
+name = "exabind-web"
+version = "0.1.0-dev"
+edition = "2021"
+
+[[bin]]
+name = "exabind-web"
+path = "src/main.rs"
+
+[dependencies]
+exabind-core = { path = "../core" }
+ratzilla = "0.1.0"
+ratatui = "0.29.0"
+tachyonfx = { version = "0.15.0", features = ["web-time"] }
+console_error_panic_hook = "0.1"
+

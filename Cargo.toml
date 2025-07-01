@@ -2,6 +2,7 @@
 members = [
     "core",
     "tui",
+    "web",
 ]
 resolver = "2"
 
@@ -11,3 +12,10 @@ lto = true
 codegen-units = 1
 opt-level = "z"
 strip = "symbols"
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
