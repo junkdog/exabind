@@ -177,7 +177,6 @@ impl ExabindApp {
         keymap: KeyMap,
     ) -> Self {
         let categories = keymap.categories();
-        let last_index = categories.len().saturating_sub(1);
         let ordered_categories = if categories.is_empty() {
             Vec::new()
         } else {

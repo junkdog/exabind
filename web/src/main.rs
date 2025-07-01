@@ -1,26 +1,23 @@
-use exabind_core::{
-    parser::kde::parse_kglobalshortcuts,
-    app::ExabindApp,
-    ui_state,
-    key_event::{KeyEvent, KeyCode as ExabindKeyCode, KeyModifiers},
-    exabind_event::ExabindEvent,
-    event_handler::EventHandler,
-    widget::AnsiKeyboardTklLayout,
-    fx::effect::starting_up,
-};
-use ratzilla::event::KeyCode;
-use ratzilla::ratatui::style::Color;
-use ratzilla::ratatui::Terminal;
-use ratzilla::{CanvasBackend, WebGl2Backend, WebRenderer};
-use std::cell::RefCell;
-use std::rc::Rc;
-use ratatui::backend::Backend;
-use ratatui::Frame;
-use ratatui::widgets::StatefulWidgetRef;
-use tachyonfx::Duration;
 use exabind_core::fx::effect::open_all_categories;
 use exabind_core::stateful_widgets::StatefulWidgets;
-use exabind_core::styling::CATPPUCCIN;
+use exabind_core::{
+    app::ExabindApp,
+    event_handler::EventHandler,
+    exabind_event::ExabindEvent,
+    fx::effect::starting_up,
+    key_event::{KeyCode as ExabindKeyCode, KeyEvent, KeyModifiers},
+    parser::kde::parse_kglobalshortcuts,
+    ui_state,
+    widget::AnsiKeyboardTklLayout,
+};
+use ratatui::widgets::StatefulWidgetRef;
+use ratatui::Frame;
+use ratzilla::event::KeyCode;
+use ratzilla::ratatui::Terminal;
+use ratzilla::{WebGl2Backend, WebRenderer};
+use std::cell::RefCell;
+use std::rc::Rc;
+use tachyonfx::Duration;
 
 fn main() -> std::io::Result<()> {
     console_error_panic_hook::set_once();
@@ -32,10 +29,17 @@ fn main() -> std::io::Result<()> {
     let keymap = parse_kglobalshortcuts(include_str!("../../test/kglobalshortcutsrc"));
     
     let mut ui_state = ui_state::UiState::new();
-    // Use the EventHandler's sender instead of creating a new channel
     let app = Rc::new(RefCell::new(ExabindApp::new(&mut ui_state, events.sender(), keymap)));
     
+
+    // Don't trigger startup animation here - we'll do it in the first frame
+
+    // Create backend with size and set background color
+    let backend = WebGl2Backend::new_with_size(1600, 900)?;
+    let terminal = Terminal::new(backend)?;
+    
     // Initialize keyboard layout and startup effect
+    ui_state.screen = terminal.size()?;
     ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout);
     ui_state.register_kbd_effect(starting_up());
 
@@ -45,13 +49,7 @@ fn main() -> std::io::Result<()> {
         let open_categories_fx = open_all_categories(app_ref.sender(), widgets);
         app_ref.stage_mut().add_effect(open_categories_fx);
     }
-
-    // Don't trigger startup animation here - we'll do it in the first frame
-
-    // Create backend with size and set background color
-    let backend = WebGl2Backend::new_with_size(1600, 900)?;
-    ui_state.screen = backend.size()?;
-    let terminal = Terminal::new(backend)?;
+    
     
     // Set up key event handling
     let sender_clone = events.sender();
@@ -61,9 +59,6 @@ fn main() -> std::io::Result<()> {
             
             // Handle basic navigation keys
             match event.code {
-                KeyCode::Char('q') => {
-                    let _ = sender_clone.send(ExabindEvent::Shutdown);
-                }
                 KeyCode::Up => {
                     let _ = sender_clone.send(ExabindEvent::PreviousCategory);
                 }
@@ -80,17 +75,6 @@ fn main() -> std::io::Result<()> {
     
     // Start the terminal with basic UI
     terminal.draw_web(move |frame| {
-        static mut FIRST_FRAME: bool = true;
-
-        // On first frame, trigger startup animation
-        unsafe {
-            if FIRST_FRAME {
-                FIRST_FRAME = false;
-                app.borrow_mut().apply_event(ExabindEvent::StartupAnimation, &mut ui_state);
-                app.borrow_mut().apply_event(ExabindEvent::AutoSelectCategory, &mut ui_state);
-            }
-        }
-
         // Process events
         while let Some(event) = events.try_next() {
             app.borrow_mut().apply_event(event, &mut ui_state);

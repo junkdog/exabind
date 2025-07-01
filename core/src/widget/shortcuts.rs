@@ -6,7 +6,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::symbols::border::Set;
 use ratatui::text::{Span, Text};
 use ratatui::widgets::{Block, Clear, Row, StatefulWidgetRef, Table, TableState, Widget};
-use tachyonfx::{HslConvertable, Interpolatable};
+use tachyonfx::{color_from_hsl, color_to_hsl, Interpolatable};
 
 pub struct ShortcutsWidget {
     shortcuts: Vec<BoundShortcut>,
@@ -42,10 +42,10 @@ impl ShortcutsWidget {
             .max()
             .unwrap_or(0);
 
-        let (h, s, l) = base_color.to_hsl_f32();
+        let (h, s, l) = color_to_hsl(&base_color);
 
         let selected_row_style = Style::default()
-            .bg(Color::from_hsl_f32(h, s, 0.0_f32.max(l - 15.0)))
+            .bg(color_from_hsl(h, s, 0.0_f32.max(l - 15.0)))
             .add_modifier(Modifier::BOLD);
 
         let constraints = [

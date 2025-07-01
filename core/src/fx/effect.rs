@@ -18,7 +18,7 @@ use web_time::Instant;
 use std::time::Instant;
 use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in};
 use tachyonfx::Motion::UpToDown;
-use tachyonfx::{fx, CellFilter, Duration, Effect, EffectManager, EffectTimer, HslConvertable, Interpolation, IntoEffect, RangeSampler, SimpleRng};
+use tachyonfx::{color_from_hsl, color_to_hsl, fx, CellFilter, Duration, Effect, EffectManager, EffectTimer, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UniqueEffectId {
@@ -379,19 +379,19 @@ fn select_category_color_cycle(
 ) -> ColorCycle<RepeatingCycle> {
     let color_step: usize = 7 * length_multiplier;
 
-    let (h, s, l) = base_color.to_hsl_f32();
+    let (h, s, l) = color_to_hsl(&base_color);
 
-    let color_l = Color::from_hsl_f32(h, s, 80.0);
-    let color_d = Color::from_hsl_f32(h, s, 40.0);
+    let color_l = color_from_hsl(h, s, 80.0);
+    let color_d = color_from_hsl(h, s, 40.0);
 
     
     RepeatingColorCycle::new(base_color, &[
         (4 * length_multiplier, color_d),
         (2 * length_multiplier, color_l),
-        (4 * length_multiplier, Color::from_hsl_f32((h - 25.0) % 360.0, s, (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl_f32(h, (s - 20.0).max(0.0), (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl_f32((h + 25.0) % 360.0, s, (l + 10.0).min(100.0))),
-        (color_step, Color::from_hsl_f32(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0))),
+        (4 * length_multiplier, color_from_hsl((h - 25.0) % 360.0, s, (l + 10.0).min(100.0))),
+        (color_step, color_from_hsl(h, (s - 20.0).max(0.0), (l + 10.0).min(100.0))),
+        (color_step, color_from_hsl((h + 25.0) % 360.0, s, (l + 10.0).min(100.0))),
+        (color_step, color_from_hsl(h, (s + 20.0).max(0.0), (l + 10.0).min(100.0))),
     ])
 }
 
