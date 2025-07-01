@@ -5,6 +5,8 @@ use exabind_core::{
     key_event::{KeyEvent, KeyCode as ExabindKeyCode, KeyModifiers},
     exabind_event::ExabindEvent,
     event_handler::EventHandler,
+    widget::AnsiKeyboardTklLayout,
+    fx::effect::starting_up,
 };
 use ratzilla::event::KeyCode;
 use ratzilla::ratatui::style::Color;
@@ -12,10 +14,8 @@ use ratzilla::ratatui::Terminal;
 use ratzilla::{CanvasBackend, WebGl2Backend, WebRenderer};
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc;
 use ratatui::Frame;
-use ratatui::prelude::Style;
-use ratatui::widgets::{Block, StatefulWidgetRef};
+use ratatui::widgets::StatefulWidgetRef;
 use tachyonfx::Duration;
 use exabind_core::stateful_widgets::StatefulWidgets;
 use exabind_core::styling::CATPPUCCIN;
@@ -26,21 +26,25 @@ fn main() -> std::io::Result<()> {
     // need an event handler for WASM
     let events = EventHandler::new(core::time::Duration::from_millis(33));
     
-    // Create a simple event channel for WASM
-    let (sender, _receiver) = mpsc::channel::<ExabindEvent>();
-    
     // Bundle KDE shortcuts data at compile time for web
     let keymap = parse_kglobalshortcuts(include_str!("../../test/kglobalshortcutsrc"));
     
     let mut ui_state = ui_state::UiState::new();
-    let app = Rc::new(RefCell::new(ExabindApp::new(&mut ui_state, sender.clone(), keymap)));
+    // Use the EventHandler's sender instead of creating a new channel
+    let app = Rc::new(RefCell::new(ExabindApp::new(&mut ui_state, events.sender(), keymap)));
     
-    // let backend = WebGl2Backend::new_with_size(1600, 900)?;
+    // Initialize keyboard layout and startup effect
+    ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout);
+    ui_state.register_kbd_effect(starting_up());
+    
+    // Don't trigger startup animation here - we'll do it in the first frame
+    
+    // Create backend with size and set background color
     let backend = WebGl2Backend::new_with_size(1600, 900)?;
     let terminal = Terminal::new(backend)?;
     
     // Set up key event handling
-    let sender_clone = sender.clone();
+    let sender_clone = events.sender();
     terminal.on_key_event(move |event| {
         if let Some(key_event) = map_key_event(&event.code) {
             let _ = sender_clone.send(ExabindEvent::KeyPress(key_event));
@@ -66,6 +70,17 @@ fn main() -> std::io::Result<()> {
     
     // Start the terminal with basic UI
     terminal.draw_web(move |frame| {
+        static mut FIRST_FRAME: bool = true;
+
+        // On first frame, trigger startup animation
+        unsafe {
+            if FIRST_FRAME {
+                FIRST_FRAME = false;
+                app.borrow_mut().apply_event(ExabindEvent::StartupAnimation, &mut ui_state);
+                app.borrow_mut().apply_event(ExabindEvent::AutoSelectCategory, &mut ui_state);
+            }
+        }
+
         // Process events
         while let Some(event) = events.try_next() {
             app.borrow_mut().apply_event(event, &mut ui_state);
@@ -73,17 +88,17 @@ fn main() -> std::io::Result<()> {
 
         // Update time and get elapsed duration
         let elapsed = app.borrow_mut().update_time();
-        
+
         // Apply effects
         ui_state.apply_kbd_effects(elapsed);
-        
+
         // Render UI
         {
             let app_ref = app.borrow();
             let stateful_widgets = app_ref.stateful_widgets();
             ui(frame, stateful_widgets, &mut ui_state);
         }
-        
+
         // Process effects
         effects(elapsed, &mut app.borrow_mut(), frame);
     });
@@ -131,16 +146,11 @@ fn ui(
     stateful_widgets: &StatefulWidgets,
     ui_state: &mut ui_state::UiState
 ) {
-    use ratatui::prelude::Widget;
-
     ui_state.screen = f.area().as_size();
+    
     if f.area().is_empty() || f.area().width == 2500 || f.area().height < 3 {
         return;
     }
-
-    Block::new()
-        .style(Style::new().bg(CATPPUCCIN.crust))
-        .render(f.area(), f.buffer_mut());
 
     ui_state.render_kbd(f.buffer_mut());
 
