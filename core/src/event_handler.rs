@@ -76,3 +76,48 @@ impl EventHandler {
         }.expect("event should have been sent");
     }
 }
+
+// Web-compatible EventHandler for WASM builds
+#[cfg(not(feature = "crossterm"))]
+use std::sync::mpsc;
+#[cfg(not(feature = "crossterm"))]
+use crate::dispatcher::Dispatcher;
+#[cfg(not(feature = "crossterm"))]
+use crate::exabind_event::ExabindEvent;
+
+#[cfg(not(feature = "crossterm"))]
+#[derive(Debug)]
+pub struct EventHandler {
+    sender: mpsc::Sender<ExabindEvent>,
+    receiver: mpsc::Receiver<ExabindEvent>,
+}
+
+#[cfg(not(feature = "crossterm"))]
+impl EventHandler {
+    pub fn new(_tick_rate: core::time::Duration) -> Self {
+        let (sender, receiver) = mpsc::channel();
+        Self { sender, receiver }
+    }
+
+    pub fn sender(&self) -> mpsc::Sender<ExabindEvent> {
+        self.sender.clone()
+    }
+
+    pub fn next(&self) -> Result<ExabindEvent, mpsc::RecvError> {
+        self.receiver.recv()
+    }
+
+    pub fn try_next(&self) -> Option<ExabindEvent> {
+        match self.receiver.try_recv() {
+            Ok(e) => Some(e),
+            Err(_) => None
+        }
+    }
+}
+
+#[cfg(not(feature = "crossterm"))]
+impl Dispatcher<ExabindEvent> for EventHandler {
+    fn dispatch(&self, event: ExabindEvent) {
+        let _ = self.sender.send(event);
+    }
+}

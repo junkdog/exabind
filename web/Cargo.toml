@@ -8,7 +8,7 @@ name = "exabind-web"
 path = "src/main.rs"
 
 [dependencies]
-exabind-core = { path = "../core" }
+exabind-core = { path = "../core", features = ["web-time"] }
 ratzilla = "0.1.0"
 ratatui = { version = "0.29.0", default-features = false }
 tachyonfx = { version = "0.15.0", default-features = false, features = ["web-time"] }

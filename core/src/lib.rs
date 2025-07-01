@@ -4,7 +4,6 @@ pub mod parser;
 pub mod args;
 pub mod crossterm;
 pub mod app;
-#[cfg(feature = "crossterm")]
 pub mod event_handler;
 pub mod fx;
 pub mod stateful_widgets;
