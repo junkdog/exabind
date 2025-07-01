@@ -174,10 +174,15 @@ impl ExabindApp {
         keymap: KeyMap,
     ) -> Self {
         let categories = keymap.categories();
-        let last_index = categories.len() - 1;
+        let last_index = categories.len().saturating_sub(1);
+        let ordered_categories = if categories.is_empty() {
+            Vec::new()
+        } else {
+            (0..categories.len()).collect()
+        };
         let keymap_context = KeyMapContext {
             categories,
-            ordered_categories: (0..last_index).collect(),
+            ordered_categories,
             current_category: None,
             current_action: None,
             filter_key_control: false,

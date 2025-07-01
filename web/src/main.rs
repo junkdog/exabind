@@ -19,8 +19,8 @@ fn main() -> std::io::Result<()> {
     // Create a simple event channel for WASM
     let (sender, _receiver) = mpsc::channel::<ExabindEvent>();
     
-    // Mock keymap for now - in a real implementation you'd load this differently
-    let keymap = parse_kglobalshortcuts("");
+    // Bundle KDE shortcuts data at compile time for web
+    let keymap = parse_kglobalshortcuts(include_str!("../../test/kglobalshortcutsrc"));
     
     let mut ui_state = ui_state::UiState::new();
     let app = Rc::new(RefCell::new(ExabindApp::new(&mut ui_state, sender.clone(), keymap)));
