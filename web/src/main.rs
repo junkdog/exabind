@@ -14,9 +14,11 @@ use ratzilla::ratatui::Terminal;
 use ratzilla::{CanvasBackend, WebGl2Backend, WebRenderer};
 use std::cell::RefCell;
 use std::rc::Rc;
+use ratatui::backend::Backend;
 use ratatui::Frame;
 use ratatui::widgets::StatefulWidgetRef;
 use tachyonfx::Duration;
+use exabind_core::fx::effect::open_all_categories;
 use exabind_core::stateful_widgets::StatefulWidgets;
 use exabind_core::styling::CATPPUCCIN;
 
@@ -36,11 +38,19 @@ fn main() -> std::io::Result<()> {
     // Initialize keyboard layout and startup effect
     ui_state.reset_kbd_buffer(AnsiKeyboardTklLayout);
     ui_state.register_kbd_effect(starting_up());
-    
+
+    {
+        let mut app_ref = app.borrow_mut();
+        let widgets = app_ref.stateful_widgets().category_widgets();
+        let open_categories_fx = open_all_categories(app_ref.sender(), widgets);
+        app_ref.stage_mut().add_effect(open_categories_fx);
+    }
+
     // Don't trigger startup animation here - we'll do it in the first frame
-    
+
     // Create backend with size and set background color
     let backend = WebGl2Backend::new_with_size(1600, 900)?;
+    ui_state.screen = backend.size()?;
     let terminal = Terminal::new(backend)?;
     
     // Set up key event handling
