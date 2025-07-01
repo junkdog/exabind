@@ -1,11 +1,16 @@
+#[cfg(feature = "crossterm")]
 use std::io;
 
-
+#[cfg(feature = "crossterm")]
 use crate::event_handler::EventHandler;
+#[cfg(feature = "crossterm")]
 use crate::exabind_event::ExabindEvent;
+#[cfg(feature = "crossterm")]
 use ratatui::layout::Size;
+#[cfg(feature = "crossterm")]
 use ratatui::Frame;
 
+#[cfg(feature = "crossterm")]
 pub type CrosstermTerminal =
     ratatui::Terminal<ratatui::backend::CrosstermBackend<io::Stdout>>;
 
@@ -13,6 +18,7 @@ pub type CrosstermTerminal =
 ///
 /// It is responsible for setting up the terminal,
 /// initializing the interface and handling the draw events.
+#[cfg(feature = "crossterm")]
 pub struct Tui {
     /// Interface to the Terminal.
     terminal: CrosstermTerminal,
@@ -20,6 +26,7 @@ pub struct Tui {
     events: EventHandler,
 }
 
+#[cfg(feature = "crossterm")]
 impl Tui {
     pub fn new(terminal: CrosstermTerminal, events: EventHandler) -> Self {
         Self { terminal, events }

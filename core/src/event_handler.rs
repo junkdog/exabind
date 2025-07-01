@@ -1,11 +1,19 @@
+#[cfg(feature = "crossterm")]
 use std::sync::mpsc;
+#[cfg(feature = "crossterm")]
 use std::thread;
+#[cfg(feature = "crossterm")]
 use crossterm::{event::Event as CrosstermEvent};
+#[cfg(feature = "crossterm")]
 use ratatui::crossterm::event;
+#[cfg(feature = "crossterm")]
 use ratatui::crossterm::event::KeyEventKind;
+#[cfg(feature = "crossterm")]
 use crate::dispatcher::Dispatcher;
+#[cfg(feature = "crossterm")]
 use crate::exabind_event::ExabindEvent;
 
+#[cfg(feature = "crossterm")]
 #[derive(Debug)]
 pub struct EventHandler {
     sender: mpsc::Sender<ExabindEvent>,
@@ -13,6 +21,7 @@ pub struct EventHandler {
     _handler: thread::JoinHandle<()>
 }
 
+#[cfg(feature = "crossterm")]
 impl EventHandler {
     pub fn new(tick_rate: std::time::Duration) -> Self {
         let (sender, receiver) = mpsc::channel();

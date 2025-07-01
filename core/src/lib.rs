@@ -4,10 +4,12 @@ pub mod parser;
 pub mod args;
 pub mod crossterm;
 pub mod app;
+#[cfg(feature = "crossterm")]
 pub mod event_handler;
 pub mod fx;
 pub mod stateful_widgets;
 pub mod styling;
+#[cfg(feature = "crossterm")]
 pub mod tui;
 pub mod widget;
 pub mod ui_state;

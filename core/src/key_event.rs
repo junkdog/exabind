@@ -89,6 +89,7 @@ impl KeyEvent {
 }
 
 // Conversion from crossterm KeyEvent to our custom KeyEvent
+#[cfg(feature = "crossterm")]
 impl From<crossterm::event::KeyEvent> for KeyEvent {
     fn from(event: crossterm::event::KeyEvent) -> Self {
         Self {
@@ -98,6 +99,7 @@ impl From<crossterm::event::KeyEvent> for KeyEvent {
     }
 }
 
+#[cfg(feature = "crossterm")]
 impl From<crossterm::event::KeyCode> for KeyCode {
     fn from(code: crossterm::event::KeyCode) -> Self {
         use crossterm::event::KeyCode as CrosstermKeyCode;
@@ -133,6 +135,7 @@ impl From<crossterm::event::KeyCode> for KeyCode {
     }
 }
 
+#[cfg(feature = "crossterm")]
 impl From<crossterm::event::MediaKeyCode> for MediaKeyCode {
     fn from(media: crossterm::event::MediaKeyCode) -> Self {
         use crossterm::event::MediaKeyCode as CrosstermMediaKeyCode;
@@ -154,6 +157,7 @@ impl From<crossterm::event::MediaKeyCode> for MediaKeyCode {
     }
 }
 
+#[cfg(feature = "crossterm")]
 impl From<crossterm::event::ModifierKeyCode> for ModifierKeyCode {
     fn from(modifier: crossterm::event::ModifierKeyCode) -> Self {
         use crossterm::event::ModifierKeyCode as CrosstermModifierKeyCode;
@@ -176,6 +180,7 @@ impl From<crossterm::event::ModifierKeyCode> for ModifierKeyCode {
     }
 }
 
+#[cfg(feature = "crossterm")]
 impl From<crossterm::event::KeyModifiers> for KeyModifiers {
     fn from(modifiers: crossterm::event::KeyModifiers) -> Self {
         let mut result = KeyModifiers::empty();
