@@ -1,5 +1,4 @@
-use crossterm::event::ModifierKeyCode;
-use ratatui::crossterm::event::KeyEvent;
+use crate::key_event::{KeyEvent, ModifierKeyCode};
 
 #[derive(Debug, Clone)]
 pub enum ExabindEvent {

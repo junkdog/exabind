@@ -5,7 +5,7 @@ use crate::exabind_event::ExabindEvent;
 use crate::fx::key_cap_outline::KeyCapOutline;
 use crate::styling::{Catppuccin, ExabindTheme, Theme, CATPPUCCIN};
 use crate::widget::{draw_key_border, render_border_with, AnsiKeyboardTklLayout, KeyCap, KeyboardLayout, ShortcutsWidget};
-use crossterm::event::KeyCode;
+use crate::key_event::KeyCode;
 use ratatui::buffer::Cell;
 use ratatui::layout::{Margin, Position, Rect, Size};
 use ratatui::prelude::Buffer;

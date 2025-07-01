@@ -1,5 +1,5 @@
 use crate::styling::{Catppuccin, ExabindTheme, Theme};
-use crossterm::event::{KeyCode, ModifierKeyCode};
+use crate::key_event::{KeyCode, ModifierKeyCode};
 use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Alignment, Margin, Rect, Size};
 use ratatui::prelude::Position;

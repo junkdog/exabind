@@ -1,6 +1,6 @@
 use crate::dispatcher::Dispatcher;
 use crate::exabind_event::ExabindEvent;
-use crossterm::event::KeyEvent;
+use crate::key_event::{KeyEvent, KeyCode, ModifierKeyCode};
 use std::sync::mpsc::Sender;
 
 #[derive(Debug)]
@@ -24,7 +24,8 @@ impl InputProcessor {
     }
 
     fn resolve_key_pressed(event: &KeyEvent) -> Option<ExabindEvent> {
-        use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
+        use KeyCode::*;
+        use ModifierKeyCode::*;
         match event.code {
             Char('q')     => Some(ExabindEvent::Shutdown),
             Char('a')     => Some(ExabindEvent::SelectedCategoryFxSandbox),

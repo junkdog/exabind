@@ -1,9 +1,9 @@
-use crossterm::event::KeyCode;
+use crate::key_event::KeyCode;
 
 pub fn format_keycode(
     key_code: KeyCode
 ) -> String {
-    use crossterm::event::{
+    use crate::key_event::{
         KeyCode::*,
         ModifierKeyCode::*,
         MediaKeyCode::*,

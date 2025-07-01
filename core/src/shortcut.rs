@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use crossterm::event::{KeyCode, ModifierKeyCode};
+use crate::key_event::{KeyCode, ModifierKeyCode};
 use crate::crossterm::format_keycode;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]

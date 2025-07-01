@@ -1,6 +1,4 @@
-use std::collections::HashMap;
 use bit_set::BitSet;
-use crossterm::event::KeyCode;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Offset, Position, Rect};
 use ratatui::style::Style;
@@ -67,7 +65,7 @@ impl KeyCapOutline {
         shortcuts: Vec<BoundShortcut>,
         style: Style,
     ) {
-        let key_caps: HashMap<KeyCode, KeyCap> = AnsiKeyboardTklLayout
+        let key_caps = AnsiKeyboardTklLayout
             .key_cap_lookup();
 
         let keys_to_outline: Vec<KeyCap> = shortcuts

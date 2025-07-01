@@ -5,7 +5,7 @@ use anpa::combinators::{attempt, many, many_to_vec, middle, no_separator, right,
 use anpa::core::{parse, ParserExt, StrParser};
 use anpa::parsers::{item_while, skip, until};
 use anpa::{or, right, tuplify};
-use crossterm::event::{KeyCode, MediaKeyCode};
+use crate::key_event::{KeyCode, MediaKeyCode};
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
@@ -174,7 +174,7 @@ mod keys {
     }
 
     fn key_code<'a>() -> impl StrParser<'a, KeyCode> {
-        use crossterm::event::{KeyCode::*, ModifierKeyCode::*};
+        use crate::key_event::{KeyCode::*, ModifierKeyCode::*};
 
         // special case for backslashes so that we can use \ as end delimiter in item_while
         or!(

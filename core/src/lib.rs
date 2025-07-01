@@ -15,6 +15,7 @@ pub mod dispatcher;
 pub mod exabind_event;
 pub mod input;
 pub mod color_cycle;
+pub mod key_event;
 
 pub use shortcut::{Action, Shortcut};
 pub use keymap::{KeyMap, IntoKeyMap};

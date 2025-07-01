@@ -59,7 +59,7 @@ impl EventHandler {
     fn consume_event(sender: &mpsc::Sender<ExabindEvent>) {
         match event::read().expect("event is read") {
             CrosstermEvent::Key(e) if e.kind == KeyEventKind::Press =>
-                sender.send(ExabindEvent::KeyPress(e)),
+                sender.send(ExabindEvent::KeyPress(e.into())),
             CrosstermEvent::Resize(w, h) =>
                 sender.send(ExabindEvent::Resize(w, h)),
 
