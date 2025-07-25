@@ -5,7 +5,6 @@ use exabind_core::{
     event_handler::EventHandler,
     exabind_event::ExabindEvent,
     fx::effect::starting_up,
-    key_event::{KeyCode as ExabindKeyCode, KeyEvent, KeyModifiers},
     parser::kde::parse_kglobalshortcuts,
     ui_state,
     widget::AnsiKeyboardTklLayout,
@@ -17,8 +16,10 @@ use ratzilla::ratatui::Terminal;
 use ratzilla::{WebGl2Backend, WebRenderer};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::mpsc::Sender;
+use ratzilla::backend::webgl2::{FontAtlasData, WebGl2BackendOptions};
 use tachyonfx::Duration;
-use web_sys::console;
+use exabind_core::dispatcher::Dispatcher;
 
 fn main() -> std::io::Result<()> {
     console_error_panic_hook::set_once();
@@ -30,7 +31,13 @@ fn main() -> std::io::Result<()> {
     let keymap = parse_kglobalshortcuts(include_str!("../../test/kglobalshortcutsrc"));
     
     // Create backend with size and set background color
-    let backend = WebGl2Backend::new_with_size(1600, 900)?;
+
+    let backend_options = WebGl2BackendOptions::new()
+        .enable_console_debug_api()
+        .font_atlas(FontAtlasData::from_binary(include_bytes!("../bitmap_font.atlas")).unwrap())
+        .size((1650, 760))
+        .measure_performance(true);
+    let backend = WebGl2Backend::new_with_options(backend_options)?;
     let terminal = Terminal::new(backend)?;
     
     let mut ui_state = ui_state::UiState::new();
@@ -50,27 +57,8 @@ fn main() -> std::io::Result<()> {
     }
     
     // Set up key event handling
-    let sender_clone = events.sender();
-    terminal.on_key_event(move |event| {
-        if let Some(key_event) = map_key_event(&event.code) {
-            let _ = sender_clone.send(ExabindEvent::KeyPress(key_event));
-            
-            // Handle basic navigation keys
-            match event.code {
-                KeyCode::Up => {
-                    let _ = sender_clone.send(ExabindEvent::PreviousCategory);
-                }
-                KeyCode::Down => {
-                    let _ = sender_clone.send(ExabindEvent::NextCategory);
-                }
-                KeyCode::Esc => {
-                    let _ = sender_clone.send(ExabindEvent::DeselectCategory);
-                }
-                _ => {}
-            }
-        }
-    });
-    
+    setup_key_event_handling(&terminal, events.sender());
+
     // Start the terminal with basic UI
     terminal.draw_web(move |frame| {
         // Process events
@@ -98,30 +86,24 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn map_key_event(key: &KeyCode) -> Option<KeyEvent> {
-    let modifiers = KeyModifiers::empty();
-    
-    // Map key codes from ratzilla to exabind
-    let code = match key {
-        KeyCode::Esc => ExabindKeyCode::Esc,
-        KeyCode::Enter => ExabindKeyCode::Enter,
-        KeyCode::Tab => ExabindKeyCode::Tab,
-        KeyCode::Backspace => ExabindKeyCode::Backspace,
-        KeyCode::Delete => ExabindKeyCode::Delete,
-        KeyCode::Home => ExabindKeyCode::Home,
-        KeyCode::End => ExabindKeyCode::End,
-        KeyCode::PageUp => ExabindKeyCode::PageUp,
-        KeyCode::PageDown => ExabindKeyCode::PageDown,
-        KeyCode::Up => ExabindKeyCode::Up,
-        KeyCode::Down => ExabindKeyCode::Down,
-        KeyCode::Left => ExabindKeyCode::Left,
-        KeyCode::Right => ExabindKeyCode::Right,
-        KeyCode::Char(c) => ExabindKeyCode::Char(*c),
-        KeyCode::F(n) => ExabindKeyCode::F(*n),
-        _ => return None, // Unsupported key
-    };
-    
-    Some(KeyEvent::new(code, modifiers))
+fn setup_key_event_handling(
+    terminal: &Terminal<WebGl2Backend>,
+    sender: Sender<ExabindEvent>,
+) {
+    terminal.on_key_event(move |event| {
+        match event.code {
+            KeyCode::Left => {
+                sender.dispatch(ExabindEvent::PreviousCategory);
+            }
+            KeyCode::Right => {
+                sender.dispatch(ExabindEvent::NextCategory);
+            }
+            KeyCode::Esc => {
+                sender.dispatch(ExabindEvent::DeselectCategory);
+            }
+            _ => {}
+        }
+    });
 }
 
 fn effects(

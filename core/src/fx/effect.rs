@@ -12,9 +12,9 @@ use ratatui::prelude::Buffer;
 use ratatui::style::{Color, Style};
 use std::fmt::Debug;
 use std::sync::mpsc::Sender;
-#[cfg(feature = "web-time")]
+#[cfg(feature = "web")]
 use web_time::Instant;
-#[cfg(not(feature = "web-time"))]
+#[cfg(not(feature = "web"))]
 use std::time::Instant;
 use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in};
 use tachyonfx::Motion::UpToDown;

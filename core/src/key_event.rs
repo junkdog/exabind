@@ -33,6 +33,8 @@ pub enum KeyCode {
     KeypadBegin,
     Media(MediaKeyCode),
     Modifier(ModifierKeyCode),
+    /// Unidentified key, used by ratzilla when the key is not recognized
+    Unidentified,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -85,6 +87,48 @@ bitflags::bitflags! {
 impl KeyEvent {
     pub fn new(code: KeyCode, modifiers: KeyModifiers) -> Self {
         Self { code, modifiers }
+    }
+}
+
+#[cfg(feature = "web")]
+impl From<ratzilla::event::KeyEvent> for KeyEvent {
+    fn from(event: ratzilla::event::KeyEvent) -> Self {
+        let mut modifiers = KeyModifiers::empty();
+        if event.shift { modifiers |= KeyModifiers::SHIFT; }
+        if event.ctrl  { modifiers |= KeyModifiers::CONTROL; }
+        if event.alt   { modifiers |= KeyModifiers::ALT; }
+
+        // no meta or hyper in ratzilla, so we don't set those
+
+        Self {
+            code: event.code.into(),
+            modifiers
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+impl From<ratzilla::event::KeyCode> for KeyCode {
+    fn from(value: ratzilla::event::KeyCode) -> Self {
+        use ratzilla::event::KeyCode as RatzillaKeyCode;
+        match value {
+            RatzillaKeyCode::Char(c) => KeyCode::Char(c),
+            RatzillaKeyCode::F(n) => KeyCode::F(n),
+            RatzillaKeyCode::Backspace => KeyCode::Backspace,
+            RatzillaKeyCode::Enter => KeyCode::Enter,
+            RatzillaKeyCode::Left => KeyCode::Left,
+            RatzillaKeyCode::Right => KeyCode::Right,
+            RatzillaKeyCode::Up => KeyCode::Up,
+            RatzillaKeyCode::Down => KeyCode::Down,
+            RatzillaKeyCode::Tab => KeyCode::Tab,
+            RatzillaKeyCode::Delete => KeyCode::Delete,
+            RatzillaKeyCode::Home => KeyCode::Home,
+            RatzillaKeyCode::End => KeyCode::End,
+            RatzillaKeyCode::PageUp => KeyCode::PageUp,
+            RatzillaKeyCode::PageDown => KeyCode::PageDown,
+            RatzillaKeyCode::Esc => KeyCode::Esc,
+            RatzillaKeyCode::Unidentified => KeyCode::Unidentified,
+        }
     }
 }
 
@@ -184,7 +228,7 @@ impl From<crossterm::event::ModifierKeyCode> for ModifierKeyCode {
 impl From<crossterm::event::KeyModifiers> for KeyModifiers {
     fn from(modifiers: crossterm::event::KeyModifiers) -> Self {
         let mut result = KeyModifiers::empty();
-        
+
         if modifiers.contains(crossterm::event::KeyModifiers::SHIFT) {
             result |= KeyModifiers::SHIFT;
         }
@@ -203,7 +247,7 @@ impl From<crossterm::event::KeyModifiers> for KeyModifiers {
         if modifiers.contains(crossterm::event::KeyModifiers::META) {
             result |= KeyModifiers::META;
         }
-        
+
         result
     }
 }

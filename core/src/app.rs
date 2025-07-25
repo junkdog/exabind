@@ -12,9 +12,9 @@ use crate::key_event::ModifierKeyCode::{LeftAlt, LeftControl, LeftMeta, LeftShif
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect, Size};
 use std::sync::mpsc::Sender;
-#[cfg(feature = "web-time")]
+#[cfg(feature = "web")]
 use web_time::Instant;
-#[cfg(not(feature = "web-time"))]
+#[cfg(not(feature = "web"))]
 use std::time::Instant;
 use tachyonfx::fx::consume_tick;
 use tachyonfx::{fx, CellFilter, Duration, Effect, EffectManager, Interpolation};

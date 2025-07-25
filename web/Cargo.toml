@@ -8,10 +8,10 @@ name = "exabind-web"
 path = "src/main.rs"
 
 [dependencies]
-exabind-core = { path = "../core", features = ["web-time"] }
-ratzilla = "0.1.0"
+exabind-core = { path = "../core", features = ["web"] }
+ratzilla = { git = "https://github.com/junkdog/ratzilla", branch = "beamterm-update-exabind" }
 ratatui = { version = "0.29.0", default-features = false }
-tachyonfx = { version = "0.15.0", default-features = false, features = ["web-time"] }
+tachyonfx = { version = "0.16.0", default-features = false, features = ["web-time"] }
 console_error_panic_hook = "0.1"
 web-sys = { version = "0.3", features = ["console"] }
 

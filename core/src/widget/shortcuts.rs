@@ -59,8 +59,7 @@ impl ShortcutsWidget {
 
         let mut title2 = title.clone();
         title2.insert(0, ' ');
-        title2.push_str(" ◢");
-
+        title2.push_str(" ");
         let table = Table::new(rows(&shortcuts, action_name_style, keystroke_style), constraints)
             .block(Block::bordered()
                 .border_set(SHORTCUT_SET_2)
@@ -174,7 +173,7 @@ impl StatefulWidgetRef for ShortcutsWidget {
 }
 
 const SHORTCUT_SET_2: Set = Set {
-    top_left:          "◢",
+    top_left:          "▟",
     top_right:         "▜",
     bottom_left:       "▔",
     bottom_right:      "▔",

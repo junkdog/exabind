@@ -144,6 +144,7 @@ impl KeyboardLayout for AnsiKeyboardTklLayout {
             Menu => (CTRL_L_W + SUPER_W + ALT_W + SPACE_W + ALT_W - 5, 11),
             KeypadBegin => (0, 0),
             Media(_) => (0, 0),
+            Unidentified => (0, 0),
         };
 
         Position::new(x, y)
@@ -388,6 +389,7 @@ impl KeyCapWidget {
             KeyCode::Modifier(ModifierKeyCode::RightMeta) => "Meta".to_string(),
             KeyCode::Modifier(ModifierKeyCode::IsoLevel3Shift) => "Iso3".to_string(),
             KeyCode::Modifier(ModifierKeyCode::IsoLevel5Shift) => "Iso5".to_string(),
+            KeyCode::Unidentified => "???".to_string(),
         };
 
         let alignment = match key_string.char_indices().count() {

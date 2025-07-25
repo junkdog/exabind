@@ -71,5 +71,6 @@ pub fn format_keycode(
         Modifier(IsoLevel5Shift) => "Iso5",
         F(_)                     => unreachable!("F key already handled"),
         Char(_)                  => unreachable!("Char already handled"),
+        _                        => "???",
     }.to_string()
 }
