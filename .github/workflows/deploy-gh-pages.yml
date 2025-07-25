@@ -68,7 +68,7 @@ jobs:
     - name: Build web application
       working-directory: web
       run: |
-        trunk build --release
+        trunk build --release --public-url /exabind
     
     - name: Deploy to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
