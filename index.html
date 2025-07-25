@@ -1,30 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Exabind Web</title>
-    <link rel="stylesheet" href="/style-ba2ccd82fbd6a04.css" integrity="sha384-FiQ5lJrGR4e2A2VtacxOz93MfKPAw1cpfHoxKLHlNMVqG22FZlFkfWD5p4wrirSS"/>
-<link rel="modulepreload" href="/exabind-web-cfe99464b5e8f834.js" crossorigin="anonymous" integrity="sha384-RM8sRqVP8zmm6JwBdynnyUvqc3BoN3e3lSyrddsVTla7OvucBvIp1II3oABt+GHh"><link rel="preload" href="/exabind-web-cfe99464b5e8f834_bg.wasm" crossorigin="anonymous" integrity="sha384-InkL1g2tWJSk2480UMq9uMVIN4UPAe5IHoCSArrsc+4mzM1DWx/GOZZoxhj28cwg" as="fetch" type="application/wasm"></head>
-<body>
-    <div class="info">
-        <h1>Exabind Web Demo</h1>
-        <p>A <a href="https://github.com/junkdog/tachyonfx" target="_blank">tachyonfx</a> <em>tech demo</em>. 
-        Tachyonfx is an effects and animation library for <a href="https://github.com/ratatui/ratatui" target="_blank">ratatui</a> applications. 
-        This demo runs in the browser via <a href="https://github.com/orhun/ratzilla" target="_blank">ratzilla</a>, 
-        using the WebGL2 backend powered by <a href="https://github.com/junkdog/beamterm" target="_blank">beamterm</a>.</p>
-        <p>Source: <a href="https://github.com/junkdog/exabind" target="_blank">exabind</a> - Interactive KDE shortcuts viewer with animated keyboard visualization.</p>
-    </div>
-
-<script type="module">
-import init, * as bindings from '/exabind-web-cfe99464b5e8f834.js';
-const wasm = await init({ module_or_path: '/exabind-web-cfe99464b5e8f834_bg.wasm' });
+<!doctype html><html lang=en><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><title>Exabind Web</title><link href=/exabind/style-42bafbdadf707ae0.css integrity=sha384-MeVI6tzSkaCOB2Wu4W5tZmZ7Q2YdSeIdP7Le50tXLVasTI2yGWcnS/nhvg59/Nev rel=stylesheet><script type=module>import init, * as bindings from '/exabind/exabind-web-cfe99464b5e8f834.js';
+const wasm = await init({ module_or_path: '/exabind/exabind-web-cfe99464b5e8f834_bg.wasm' });
 
 
 window.wasmBindings = bindings;
 
 
-dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
-
-</script></body>
-</html>
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));</script><link crossorigin href=/exabind/exabind-web-cfe99464b5e8f834.js integrity=sha384-AMENcfiDY9HGK0149j7AGS5P6Odc8wHe+PVgpm3gBHMpAZzyNoeRoEtXwCnzB2o9 rel=modulepreload><link as=fetch crossorigin href=/exabind/exabind-web-cfe99464b5e8f834_bg.wasm integrity=sha384-aalkxOcctQO7ZwbSuomDT87RWSMlxkZavGXUfN5KVycRpuuHQjbF/1hyrVMKVGTH rel=preload type=application/wasm></head><body><div class=info><h1>Exabind Web Demo</h1><p>A <a href=https://github.com/junkdog/tachyonfx target=_blank>tachyonfx</a> <em>tech demo</em>. Tachyonfx is an effects and animation library for <a href=https://github.com/ratatui/ratatui target=_blank>ratatui</a> applications. This demo runs in the browser via <a href=https://github.com/orhun/ratzilla target=_blank>ratzilla</a>, using the WebGL2 backend powered by <a href=https://github.com/junkdog/beamterm target=_blank>beamterm</a>.</p><p>Source: <a href=https://github.com/junkdog/exabind target=_blank>exabind</a> - Interactive KDE shortcuts viewer with animated keyboard visualization.</p></div></body></html>
