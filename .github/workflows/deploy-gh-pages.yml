@@ -23,9 +23,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-bin-trunk-${{ hashFiles('~/.cargo/bin/trunk') }}
+        key: ${{ runner.os }}-cargo-bin-trunk
         restore-keys: |
-          ${{ runner.os }}-cargo-bin-trunk-
+          ${{ runner.os }}-cargo-bin-trunk
     
     - name: Install trunk
       run: |
@@ -55,9 +55,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cargo/bin
-        key: ${{ runner.os }}-cargo-bin-trunk-${{ hashFiles('~/.cargo/bin/trunk') }}
+        key: ${{ runner.os }}-cargo-bin-trunk
         restore-keys: |
-          ${{ runner.os }}-cargo-bin-trunk-
+          ${{ runner.os }}-cargo-bin-trunk
     
     - name: Install trunk
       run: |
