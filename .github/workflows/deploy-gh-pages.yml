@@ -1,0 +1,53 @@
+name: 🏗 Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Add WebAssembly target
+      run: rustup target add wasm32-unknown-unknown
+    
+    - name: Install trunk
+      run: cargo install --locked trunk
+    
+    - name: Build
+      run: cargo build 
+    
+    - name: Run tests
+      run: cargo test 
+  
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Add WebAssembly target
+      run: rustup target add wasm32-unknown-unknown
+    
+    - name: Install trunk
+      run: cargo install --locked trunk
+    
+    - name: Build web application
+      working-directory: web
+      run: |
+        trunk build --release
+    
+    - name: Deploy to GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: web/dist
+        branch: gh-pages
