@@ -19,8 +19,19 @@ jobs:
     - name: Add WebAssembly target
       run: rustup target add wasm32-unknown-unknown
     
+    - name: Cache cargo bin
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin
+        key: ${{ runner.os }}-cargo-bin-trunk-${{ hashFiles('~/.cargo/bin/trunk') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-bin-trunk-
+    
     - name: Install trunk
-      run: cargo install --locked trunk
+      run: |
+        if ! command -v trunk &> /dev/null; then
+          cargo install --locked trunk
+        fi
     
     - name: Build
       run: cargo build 
@@ -40,8 +51,19 @@ jobs:
     - name: Add WebAssembly target
       run: rustup target add wasm32-unknown-unknown
     
+    - name: Cache cargo bin
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin
+        key: ${{ runner.os }}-cargo-bin-trunk-${{ hashFiles('~/.cargo/bin/trunk') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-bin-trunk-
+    
     - name: Install trunk
-      run: cargo install --locked trunk
+      run: |
+        if ! command -v trunk &> /dev/null; then
+          cargo install --locked trunk
+        fi
     
     - name: Build web application
       working-directory: web
