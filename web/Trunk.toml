@@ -1,0 +1,5 @@
+[build]
+target = "index.html"          # The index HTML file to drive the bundling process.
+html_output = "index.html"     # The name of the output HTML file.
+public_url = "/exabind"        # The public URL from which assets are to be served.
+minify = "on_release"          # Control minification: can be one of: never, on_release, always
