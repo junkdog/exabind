@@ -20,6 +20,7 @@ use std::sync::mpsc::Sender;
 use ratzilla::backend::webgl2::{FontAtlasData, WebGl2BackendOptions};
 use tachyonfx::Duration;
 use exabind_core::dispatcher::Dispatcher;
+use exabind_core::key_event::ModifierKeyCode;
 
 fn main() -> std::io::Result<()> {
     console_error_panic_hook::set_once();
@@ -91,17 +92,17 @@ fn setup_key_event_handling(
     terminal: &Terminal<WebGl2Backend>,
     sender: Sender<ExabindEvent>,
 ) {
+    use ModifierKeyCode::*;
+
     terminal.on_key_event(move |event| {
         match event.code {
-            KeyCode::Left => {
-                sender.dispatch(ExabindEvent::PreviousCategory);
-            }
-            KeyCode::Right => {
-                sender.dispatch(ExabindEvent::NextCategory);
-            }
-            KeyCode::Esc => {
-                sender.dispatch(ExabindEvent::DeselectCategory);
-            }
+            KeyCode::Char('1') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftShift)),
+            KeyCode::Char('2') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftControl)),
+            KeyCode::Char('3') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftAlt)),
+            KeyCode::Char('4') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftMeta)),
+            KeyCode::Left => sender.dispatch(ExabindEvent::PreviousCategory),
+            KeyCode::Right => sender.dispatch(ExabindEvent::NextCategory),
+            KeyCode::Esc => sender.dispatch(ExabindEvent::DeselectCategory),
             _ => {}
         }
     });
