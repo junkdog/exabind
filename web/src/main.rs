@@ -34,9 +34,10 @@ fn main() -> std::io::Result<()> {
 
     let backend_options = WebGl2BackendOptions::new()
         .enable_console_debug_api()
+        .enable_mouse_selection()
         .font_atlas(FontAtlasData::from_binary(include_bytes!("../bitmap_font.atlas")).unwrap())
-        .size((1650, 760))
-        .measure_performance(true);
+        .measure_performance(true)
+        .size((1650, 760));
     let backend = WebGl2Backend::new_with_options(backend_options)?;
     let terminal = Terminal::new(backend)?;
     
