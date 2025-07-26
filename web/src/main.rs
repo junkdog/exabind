@@ -98,8 +98,8 @@ fn setup_key_event_handling(
         match event.code {
             KeyCode::Char('1') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftShift)),
             KeyCode::Char('2') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftControl)),
-            KeyCode::Char('3') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftAlt)),
-            KeyCode::Char('4') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftMeta)),
+            KeyCode::Char('3') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftMeta)),
+            KeyCode::Char('4') => sender.dispatch(ExabindEvent::ToggleFilterKey(LeftAlt)),
             KeyCode::Left => sender.dispatch(ExabindEvent::PreviousCategory),
             KeyCode::Right => sender.dispatch(ExabindEvent::NextCategory),
             KeyCode::Esc => sender.dispatch(ExabindEvent::DeselectCategory),
