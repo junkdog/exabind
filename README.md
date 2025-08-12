@@ -8,6 +8,8 @@ Feel free to open issues for any features requests or bugs you find!
 
 ![exabind](demo/exabind-02.gif)
 
+**[🌐 Try it online](https://junkdog.github.io/exabind)**
+
 ## Features
 
 - Interactive keyboard layout visualization with LED effects and key highlighting
