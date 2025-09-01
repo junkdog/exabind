@@ -9,14 +9,14 @@ crossterm = ["dep:crossterm"]
 web = ["dep:web-time", "dep:ratzilla"]
 
 [dependencies]
-anpa = "0.9.0"
-bit-set = "0.8.0"
-dirs = "5.0.1"
-crossterm = { version = "0.28.1", optional = true }
-ratzilla = { git = "https://github.com/junkdog/ratzilla", branch = "beamterm-update-exabind", optional = true }
-clap = { version = "4.5.21", features = ["derive"] }
-web-time = { version = "1.1", optional = true }
-ratatui = { version = "0.29.0", default-features = false, features = ["unstable-widget-ref"] }
-tachyonfx = { version = "0.16.0", default-features = false }
-rectangle-pack = "0.4.2"
-bitflags = "2.4.1"
+anpa = { workspace = true }
+bit-set = { workspace = true }
+bitflags = { workspace = true }
+clap = { workspace = true }
+crossterm = { workspace = true, optional = true }
+dirs = { workspace = true }
+ratatui = { workspace = true, features = ["unstable-widget-ref"] }
+ratzilla = { workspace = true, optional = true }
+rectangle-pack = { workspace = true }
+tachyonfx = { workspace = true, default-features = false }
+web-time = { workspace = true, optional = true }
