@@ -17,7 +17,7 @@ dirs = "5.0.1"
 ratatui = { version = "0.29.0", default-features = false }
 ratzilla = { git = "https://github.com/junkdog/ratzilla", branch = "beamterm-update" }
 rectangle-pack = "0.4.2"
-tachyonfx = { git = "https://github.com/junkdog/tachyonfx", default-features = false }
+tachyonfx = { version = "0.18.0", default-features = false }
 web-sys = "0.3"
 web-time = "1.1"
 
