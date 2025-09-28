@@ -16,7 +16,7 @@ use std::sync::mpsc::Sender;
 use web_time::Instant;
 #[cfg(not(feature = "web"))]
 use std::time::Instant;
-use tachyonfx::fx::{effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in};
+use tachyonfx::fx::{dispatch_event, effect_fn_buf, parallel, prolong_start, sequence, sleep, sweep_in};
 use tachyonfx::Motion::UpToDown;
 use tachyonfx::{color_from_hsl, color_to_hsl, fx, CellFilter, Duration, Effect, EffectManager, EffectTimer, Interpolation, IntoEffect, RangeSampler, SimpleRng};
 
@@ -280,27 +280,6 @@ pub fn led_kbd_border() -> Effect {
     color_cycle_fg(color_cycle, 100, |cell| {
         let symbol = cell.symbol();
         symbol != " " && !symbol.chars().next().map(is_box_drawing).unwrap_or(false)
-    })
-}
-
-
-/// Creates an effect that dispatches an event as soon as it starts.
-///
-/// # Type Parameters
-/// * `T` - Event type that implements Clone and 'static
-///
-/// # Arguments
-/// * `sender` - Channel for sending the event
-/// * `event` - Event to be dispatched
-///
-/// # Returns
-/// An Effect that dispatches the specified event.
-pub fn dispatch_event<T: Clone + Debug + Send + 'static>(
-    sender: Sender<T>,
-    event: T
-) -> Effect {
-    effect_fn_buf(Some(event), 1, move |e, _, _| {
-        if let Some(e) = e.take() { sender.dispatch(e) }
     })
 }
 
