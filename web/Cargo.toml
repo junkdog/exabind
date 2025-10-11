@@ -12,6 +12,6 @@ console_error_panic_hook = { workspace = true }
 exabind-core = { path = "../core", features = ["web"] }
 ratatui = { workspace = true, features = ["unstable-widget-ref"] }
 ratzilla = { workspace = true }
-tachyonfx = { workspace = true, default-features = false, features = ["web-time"] }
+tachyonfx = { workspace = true, default-features = false, features = ["wasm"] }
 web-sys = { workspace = true, features = ["console"] }
 
