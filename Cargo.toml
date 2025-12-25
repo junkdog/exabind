@@ -17,7 +17,7 @@ dirs = "5.0.1"
 ratatui = { version = "0.29.0", default-features = false }
 # ratzilla = { version = "0.2.0" }
 # ratzilla = { path = "../ratzilla" }
-ratzilla = { git = "https://github.com/junkdog/ratzilla", branch = "beamterm-0.8.0-update" }
+ratzilla = { git = "https://github.com/junkdog/ratzilla", branch = "beamterm-latest" }
 rectangle-pack = "0.4.2"
 tachyonfx = { version = "0.19.0", default-features = false, features = ["std"] }
 web-sys = "0.3"
