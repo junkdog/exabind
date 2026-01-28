@@ -15,12 +15,11 @@ console_error_panic_hook = "0.1"
 crossterm = "0.29.0"
 dirs = "5.0.1"
 ratatui = { version = "0.30.0", default-features = false, features = ["layout-cache"] }
-# ratzilla = { version = "0.2.0" }
+# ratzilla = { version = "0.3.0" }
 # ratzilla = { path = "../ratzilla" }
 ratzilla = { git = "https://github.com/junkdog/ratzilla", branch = "beamterm-resize-fix" }
 rectangle-pack = "0.4.2"
-# tachyonfx = { version = "0.19.0", default-features = false, features = ["std"] }
-tachyonfx = { git = "https://github.com/ratatui/tachyonfx", branch = "development", features = ["std"] }
+tachyonfx = { version = "0.23.0", default-features = false, features = ["std"] }
 web-sys = "0.3"
 web-time = "1.1"
 
