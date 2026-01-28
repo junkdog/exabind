@@ -5,7 +5,7 @@ use ratatui::layout::{Constraint, Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::symbols::border::Set;
 use ratatui::text::{Span, Text};
-use ratatui::widgets::{Block, Clear, Row, StatefulWidget, StatefulWidgetRef, Table, TableState, Widget};
+use ratatui::widgets::{Block, Clear, Row, StatefulWidget, Table, TableState, Widget};
 use tachyonfx::{color_from_hsl, color_to_hsl, Interpolatable};
 
 pub struct ShortcutsWidget {
@@ -154,7 +154,7 @@ impl StatefulWidget for &ShortcutsWidget {
 
         Clear.render(translated_area, buf);
 
-        (&self.table).render_ref(translated_area, buf, &mut state.table_state);
+        StatefulWidget::render(self.table.clone(), translated_area, buf, &mut state.table_state);
 
         let border_south = translated_area.rows().last().unwrap_or_default();
         for xy in border_south.positions() {

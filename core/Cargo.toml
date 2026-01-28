@@ -15,7 +15,7 @@ bitflags = { workspace = true }
 clap = { workspace = true }
 crossterm = { workspace = true, optional = true }
 dirs = { workspace = true }
-ratatui = { workspace = true, features = ["unstable-widget-ref"] }
+ratatui = { workspace = true }
 ratzilla = { workspace = true, optional = true }
 rectangle-pack = { workspace = true }
 tachyonfx = { workspace = true, default-features = false }

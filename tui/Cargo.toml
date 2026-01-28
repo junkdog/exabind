@@ -11,6 +11,6 @@ path = "src/main.rs"
 bit-set = { workspace = true }
 crossterm = { workspace = true }
 exabind-core = { path = "../core", features = ["crossterm"] }
-ratatui = { workspace = true, features = ["unstable-widget-ref", "crossterm"] }
+ratatui = { workspace = true, features = ["crossterm"] }
 rectangle-pack = { workspace = true }
 tachyonfx = { workspace = true }
