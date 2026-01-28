@@ -13,7 +13,7 @@ use ::crossterm::event::{KeyboardEnhancementFlags, PushKeyboardEnhancementFlags}
 use ::crossterm::execute;
 use ratatui::prelude::Frame;
 use ratatui::style::Style;
-use ratatui::widgets::{Block, StatefulWidgetRef};
+use ratatui::widgets::{Block, StatefulWidget};
 use std::io;
 use std::io::stdout;
 use tachyonfx::Duration;
@@ -102,6 +102,6 @@ fn ui(
     // shortcuts window
     stateful_widgets.shortcuts
         .iter()
-        .for_each(|w| w.render_ref(area, f.buffer_mut(), &mut ui_state.shortcuts));
+        .for_each(|w| w.render(area, f.buffer_mut(), &mut ui_state.shortcuts));
 }
 

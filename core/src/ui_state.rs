@@ -76,7 +76,7 @@ impl UiState {
             .render(area, &mut buf);
 
         let kbd = KeyboardWidget::new(kbd.layout());
-        kbd.render(buf.area, &mut buf);
+        (&kbd).render(buf.area, &mut buf);
     }
 
     /// Updates the list of currently active modifier keys.
@@ -98,11 +98,11 @@ impl UiState {
         self.kbd.effects.process_effects(elapsed, &mut work_buf, area);
 
         // render active modifiers
-        KeyboardWidget::new_with_style(
+        (&KeyboardWidget::new_with_style(
             self.kbd.active_modifiers.clone(),
             Style::default().fg(CATPPUCCIN.peach).bg(CATPPUCCIN.surface0).add_modifier(Modifier::BOLD),
             None,
-        ).render(area, &mut work_buf);
+        )).render(area, &mut work_buf);
     }
 
     /// Returns a mutable reference to the keyboard effects stage.

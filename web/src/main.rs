@@ -9,7 +9,7 @@ use exabind_core::{
     ui_state,
     widget::AnsiKeyboardTklLayout,
 };
-use ratatui::widgets::StatefulWidgetRef;
+use ratatui::widgets::StatefulWidget;
 use ratatui::Frame;
 use ratzilla::event::KeyCode;
 use ratzilla::ratatui::Terminal;
@@ -135,6 +135,6 @@ fn ui(
     // shortcuts window
     stateful_widgets.shortcuts
         .iter()
-        .for_each(|w| w.render_ref(area, f.buffer_mut(), &mut ui_state.shortcuts));
+        .for_each(|w| w.render(area, f.buffer_mut(), &mut ui_state.shortcuts));
 }
 

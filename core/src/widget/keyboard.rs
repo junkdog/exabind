@@ -5,7 +5,7 @@ use ratatui::layout::{Alignment, Margin, Rect, Size};
 use ratatui::prelude::Position;
 use ratatui::style::Style;
 use ratatui::text::{Span, Text};
-use ratatui::widgets::{Widget, WidgetRef};
+use ratatui::widgets::Widget;
 use std::collections::HashMap;
 // ref: https://upload.wikimedia.org/wikipedia/commons/3/3a/Qwerty.svg
 
@@ -273,9 +273,9 @@ impl KeyboardWidget {
     }
 }
 
-impl WidgetRef for KeyboardWidget {
-    fn render_ref(
-        &self,
+impl Widget for &KeyboardWidget {
+    fn render(
+        self,
         _area: Rect,
         buf: &mut Buffer
     ) {
@@ -423,14 +423,6 @@ impl Widget for KeyCapWidget {
     }
 }
 
-impl WidgetRef for KeyCapWidget {
-    fn render_ref(&self, _area: Rect, buf: &mut Buffer) {
-        if let Some(border_style) = self.border_style {
-            render_border(self.key_cap.clone(), border_style, buf);
-        }
-        self.render_keypad(buf);
-    }
-}
 
 pub fn draw_key_border(
     decorate: char,
