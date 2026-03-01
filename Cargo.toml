@@ -15,8 +15,8 @@ console_error_panic_hook = "0.1"
 crossterm = "0.29.0"
 dirs = "5.0.1"
 ratatui = { version = "0.30.0", default-features = false, features = ["layout-cache"] }
-ratzilla = { path = "../ratzilla" }
-#ratzilla = { git = "https://github.com/ratatui/ratzilla", branch = "main" }
+# ratzilla = { path = "../ratzilla" }
+ratzilla = { git = "https://github.com/ratatui/ratzilla", branch = "main" }
 rectangle-pack = "0.4.2"
 tachyonfx = { version = "0.23.0", default-features = false, features = ["std"] }
 web-sys = "0.3"
