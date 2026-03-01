@@ -40,7 +40,7 @@ fn main() -> std::io::Result<()> {
         .measure_performance(true)
         .size((1650, 760));
     let backend = WebGl2Backend::new_with_options(backend_options)?;
-    let terminal = Terminal::new(backend)?;
+    let mut terminal = Terminal::new(backend)?;
     
     let mut ui_state = ui_state::UiState::new();
     
@@ -59,7 +59,7 @@ fn main() -> std::io::Result<()> {
     }
     
     // Set up key event handling
-    setup_key_event_handling(&terminal, events.sender());
+    setup_key_event_handling(&mut terminal, events.sender());
 
     // Start the terminal with basic UI
     terminal.draw_web(move |frame| {
@@ -89,7 +89,7 @@ fn main() -> std::io::Result<()> {
 }
 
 fn setup_key_event_handling(
-    terminal: &Terminal<WebGl2Backend>,
+    terminal: &mut Terminal<WebGl2Backend>,
     sender: Sender<ExabindEvent>,
 ) {
     use ModifierKeyCode::*;
