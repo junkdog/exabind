@@ -19,7 +19,25 @@
         This demo runs in the browser via <a href="https://github.com/ratatui/ratzilla" target="_blank">ratzilla</a>, 
         using the WebGL2 backend powered by <a href="https://github.com/junkdog/beamterm" target="_blank">beamterm</a>.</p>
         <p>Source: <a href="https://github.com/junkdog/exabind" target="_blank">exabind</a> - Interactive KDE shortcuts viewer with animated keyboard visualization.</p>
-        <p><strong>Controls:</strong> 1-4 (toggle filters: Shift/Ctrl/Alt/Meta), ←→ (navigate categories), Esc (deselect)</p>
+        <p><strong>Controls:</strong> 1-4 (toggle filters: Shift/Ctrl/Alt/Meta), ←→↑↓ (navigate categories), Esc (deselect)</p>
     </div>
+    <script>
+        window.addEventListener("DOMContentLoaded", function() {
+            var canvas = document.querySelector("canvas");
+            if (canvas) {
+                canvas.focus();
+            } else {
+                new MutationObserver(function(_, obs) {
+                    var c = document.querySelector("canvas");
+                    if (c) { c.focus(); obs.disconnect(); }
+                }).observe(document.body, { childList: true, subtree: true });
+            }
+            window.addEventListener("keydown", function(e) {
+                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.key) !== -1) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
