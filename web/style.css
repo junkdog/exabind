@@ -11,6 +11,10 @@ body {
     color: #cdd6f4;
 }
 
+canvas:focus {
+    outline: none;
+}
+
 pre {
     margin: 0;
 }
